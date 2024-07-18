@@ -1,5 +1,6 @@
 <script>
 import axios from '$lib/axios';
+import { onMount } from 'svelte';
 import { fade } from 'svelte/transition';
 
 /** @type {import('./$types').PageData} */
@@ -66,6 +67,10 @@ const textArea = {
 function focusOnCreate(el) {
     el.focus();
 }
+
+onMount(() => {
+    console.log(posts);
+});
 </script>
 
 <div class="w-full flex justify-center mt-2">
@@ -79,13 +84,13 @@ function focusOnCreate(el) {
     <div class="p-2 rounded-lg flex flex-col gap-2 border border-gray-400 sm:w-[80%]">
         {#each posts as post}
             <div
-                class="bg-gray-600 rounded w-fit p-1 px-2"
+                class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
                 transition:fade={{ delay: 250, duration: 300 }}
             >
                 <p> {post.content} </p>
             </div>
         {:else}
-            <div class="w-full flex justify-center items-center text-sm italic h-20">
+            <div class="w-full flex justify-center items-center text-sm italic h-40">
                 None yet...
             </div>
         {/each}
@@ -112,11 +117,11 @@ function focusOnCreate(el) {
                 {#if textArea.submitting}
                     <span class="loader"></span>
                 {:else if textArea.error}
-                    <img 
-                        id="errorSvg" 
-                        src="error.svg" 
-                        alt="error img" 
-                        class="boop pos-y-wiggle" 
+                    <img
+                        id="errorSvg"
+                        src="error.svg"
+                        alt="error img"
+                        class="boop pos-y-wiggle"
                     />
                 {:else}
                     <img src="send.svg" alt="send img"/>
