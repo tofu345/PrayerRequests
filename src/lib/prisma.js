@@ -4,6 +4,10 @@ const prisma = new PrismaClient();
 /** @type {{ id: number, content: string, createdAt: Date }[] | null} */
 let cache = null;
 
+export function clearCache() {
+    cache = null;
+}
+
 export async function getPosts() {
     if (cache != null) {
         return cache;
@@ -15,7 +19,7 @@ export async function getPosts() {
 
 /** @param {string} content */
 export async function createPost(content) {
-    cache = null;
+    clearCache();
     return prisma.post.create({ data: { content: content } });
 }
 
