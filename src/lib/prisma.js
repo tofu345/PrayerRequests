@@ -8,12 +8,23 @@ export function clearCache() {
     cache = null;
 }
 
+/** @returns {Date} */
+export function secondToTheLastSunday() {
+    let date = new Date();
+    date.setDate(date.getDate() - date.getDay() - 7);
+    return date;
+}
+
 export async function getPosts() {
     if (cache != null) {
         return cache;
     }
 
-    cache = await prisma.post.findMany();
+    cache = await prisma.post.findMany({
+        where: {
+            createdAt: { gt: secondToTheLastSunday() },
+        },
+    });
     return cache;
 }
 
@@ -23,10 +34,19 @@ export async function createPost(content) {
     return prisma.post.create({ data: { content: content } });
 }
 
-// async function main() {
-// }
+export async function deleteOldPosts() {
+    clearCache();
+    return prisma.post.deleteMany({
+        where: {
+            createdAt: { lt: secondToTheLastSunday() },
+        },
+    });
+}
 
-// main()
+// async function test() {
+// }
+//
+// test()
 //     .then(async () => {
 //         await prisma.$disconnect();
 //     })
