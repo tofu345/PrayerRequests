@@ -5,8 +5,8 @@ import "../app.css";
 <slot />
 
 <style>
+/* this will apply to <body> */
 :global(body) {
-    /* this will apply to <body> */
     background: rgb(33, 33, 33);
     color: white;
 }

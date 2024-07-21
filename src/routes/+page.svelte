@@ -1,11 +1,18 @@
 <script>
 import axios from '$lib/axios';
 import { onMount } from 'svelte';
-import { fade } from 'svelte/transition';
+import { fade, slide } from 'svelte/transition';
+import * as Types from "$lib/types"
 
 /** @type {import('./$types').PageData} */
 export let data;
-$: ({ posts } = data)
+let loadingData = true;
+
+/** @type {Types.Post[]} */
+$: posts = [];
+/** @type {Types.Post[]} */
+$: olderPosts = [];
+let olderPostsShown = false;
 
 async function submitForm() {
     textArea.submitting = true;
@@ -69,19 +76,33 @@ function focusOnCreate(el) {
 }
 
 onMount(() => {
-    console.log(posts);
+    let date = new Date();
+    date.setDate(date.getDate() - date.getDay() - 7);
+    posts = data.posts.filter(v => v.createdAt >= date);
+    olderPosts = data.posts.filter(v => v.createdAt < date);
+    loadingData = false;
 });
 </script>
 
 <div class="w-full flex justify-center mt-2">
-    <h1 class="font-bold text-2xl">IKON</h1>
+    <a href="https://www.ikon.church" class="font-bold text-2xl">IKON</a>
 </div>
 <div class="w-full flex justify-center mb-2">
     <p class="text-sm">Prayer and Praise Requests</p>
 </div>
 
-<div class="w-full p-2 sm:flex sm:justify-center">
-    <div class="p-2 rounded-lg flex flex-col gap-2 border border-gray-400 sm:w-[80%]">
+<div class="h-fit w-full p-2 sm:flex sm:justify-center">
+    <div class="p-3 rounded-lg flex flex-col gap-2 border border-gray-400 sm:w-[80%]">
+        {#if loadingData}
+            <div class="w-full flex justify-center items-center text-sm italic h-40">
+                Loading...
+            </div>
+        {:else if posts.length == 0}
+            <div class="w-full flex justify-center items-center text-sm italic h-40">
+                None yet...
+            </div>
+        {/if}
+
         {#each posts as post}
             <div
                 class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
@@ -89,15 +110,42 @@ onMount(() => {
             >
                 <p> {post.content} </p>
             </div>
-        {:else}
-            <div class="w-full flex justify-center items-center text-sm italic h-40">
-                None yet...
-            </div>
         {/each}
+
+        {#if !loadingData && olderPosts.length != 0}
+            <button
+                on:click={() => olderPostsShown = !olderPostsShown}
+            >
+                <div class="flex gap-2 cursor-pointer border-4 border-transparent 
+                        border-l-gray-600 rounded text-sm w-full p-2 my-1">
+                    {#if olderPostsShown}
+                        <img src="caret-down.svg" alt="caret-down" />
+                    {:else}
+                        <img src="caret-right.svg" alt="caret-right" />
+                    {/if}
+                    <p> Last week </p>
+                </div>
+            </button>
+        {/if}
+
+        <div class="ml-0">
+            {#if olderPostsShown}
+                <div class="flex flex-col gap-2" transition:slide={{ duration: 300 }}>
+                    {#each olderPosts as post}
+                        <div
+                            class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
+                            transition:fade={{ delay: 250, duration: 300 }}
+                        >
+                            <p> {post.content} </p>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
     </div>
 </div>
 
-<div class="stick-bottom w-full p-2 lg:mx-50 mb-2 flex justify-center">
+<div class="w-full p-2 lg:mx-50 mb-2 flex justify-center">
     {#if textArea.visible}
         <form
             on:submit|preventDefault={() => submitForm()}
@@ -241,7 +289,7 @@ position: unset;
 
 .boop {
     display: inline-block;
-    animation-duration: 0.5s;
+    animation-duration: 0.3s;
     animation-play-state: paused;
     animation-fill-mode: forwards;
 }
@@ -249,4 +297,20 @@ position: unset;
     animation-name: pos-y-wiggle;
     animation-play-state: running;
 }
+
+/* https://codepen.io/ericrasch/pen/kWWzzk */
+/* .line-behind {
+    display: table;
+    white-space: nowrap;
+    &:before, &:after {
+        border-top: 1px solid #8c8c8c;
+        content: '';
+        display: table-cell;
+        position: relative;
+        top: 0.7em;
+        width: 46%;
+    }
+    &:before { right: 1%; }
+    &:after { left: 1%; }
+} */
 </style>

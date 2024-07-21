@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import * as Types from "$lib/types"
 
 const prisma = new PrismaClient();
-/** @type {{ id: number, content: string, createdAt: Date }[] | null} */
+
+/** @type {Types.Post[] | null} */
 let cache = null;
 
 export function clearCache() {
@@ -11,7 +13,7 @@ export function clearCache() {
 /** @returns {Date} */
 export function secondToTheLastSunday() {
     let date = new Date();
-    date.setDate(date.getDate() - date.getDay() - 7);
+    date.setDate(date.getDate() - date.getDay() - 14);
     return date;
 }
 
@@ -44,6 +46,9 @@ export async function deleteOldPosts() {
 }
 
 // async function test() {
+//     // let obj = await prisma.post.create({ data: { content: "something", createdAt: new Date("Sun Jul 15 2024 14:42:24 GMT+0100 (British Summer Time)")}});
+//     let posts = await prisma.post.findMany();
+//     console.log("non recent:", posts.filter((v) => v.createdAt < secondToTheLastSunday()));
 // }
 //
 // test()
