@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import * as Types from "$lib/types"
+import * as Types from "$lib/types";
+
+import * as bcrypt from "bcrypt";
+const saltRounds = 10;
 
 const prisma = new PrismaClient();
 
@@ -36,6 +39,12 @@ export async function createPost(content) {
     return prisma.post.create({ data: { content: content } });
 }
 
+/** @param {number} id */
+export async function deletePost(id) {
+    clearCache();
+    return prisma.post.deleteMany({ where: { id } });
+}
+
 export async function deleteOldPosts() {
     clearCache();
     return prisma.post.deleteMany({
@@ -45,18 +54,53 @@ export async function deleteOldPosts() {
     });
 }
 
-// async function test() {
-//     // let obj = await prisma.post.create({ data: { content: "something", createdAt: new Date("Sun Jul 15 2024 14:42:24 GMT+0100 (British Summer Time)")}});
-//     let posts = await prisma.post.findMany();
-//     console.log("non recent:", posts.filter((v) => v.createdAt < secondToTheLastSunday()));
-// }
-//
-// test()
-//     .then(async () => {
-//         await prisma.$disconnect();
-//     })
-//     .catch(async (e) => {
-//         console.error(e);
-//         await prisma.$disconnect();
-//         process.exit(1);
-//     });
+/**
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<boolean>}
+ */
+export async function verifyAdminPassword(email, password) {
+    const admin = await getAdmin(email);
+    if (admin === null) {
+        return false;
+    }
+
+    return await bcrypt.compare(password, admin.password);
+}
+
+/**
+ * @param {string} email
+ * @returns {Promise<Types.Admin | null>}
+ */
+export async function getAdmin(email) {
+    return prisma.admin.findFirst({ where: { email } });
+}
+
+/**
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<Types.Admin>}
+ */
+async function createAdmin(email, password) {
+    const hash = await bcrypt.hash(password, saltRounds);
+    const admin = await prisma.admin.create({
+        data: { email, password: hash },
+    });
+    return admin;
+}
+
+async function test() {
+    // const admin = await createAdmin("tofs@email.com", "123");
+    // console.log(admin);
+    // console.log(await verifyAdminPassword("tofs@email.com", "123"));
+}
+
+test()
+    .then(async () => {
+        await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+        console.error(e);
+        await prisma.$disconnect();
+        process.exit(1);
+    });

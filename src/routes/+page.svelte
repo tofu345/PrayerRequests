@@ -8,6 +8,9 @@ import * as Types from "$lib/types"
 export let data;
 let loadingData = true;
 
+/** @type {string} */
+const admin = data.admin;
+
 /** @type {Types.Post[]} */
 $: posts = [];
 /** @type {Types.Post[]} */
@@ -75,6 +78,23 @@ function focusOnCreate(el) {
     el.focus();
 }
 
+/** @param {number} id */
+async function deletePost(id) {
+    if (!window.confirm("Are you sure?")) {
+        return;
+    }
+    
+    /** @type {import('axios').AxiosResponse} */
+    const res = await axios
+        .post("/api/delete-post", { id })
+        .then((res) => res)
+        .catch((err) => err.response);
+    if (res.status === 200) {
+        posts = posts.filter(v => v.id != id);
+        olderPosts = olderPosts.filter(v => v.id != id);
+    }
+}
+
 onMount(() => {
     let date = new Date();
     date.setDate(date.getDate() - date.getDay() - 7);
@@ -105,10 +125,17 @@ onMount(() => {
 
         {#each posts as post}
             <div
-                class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
-                transition:fade={{ delay: 250, duration: 300 }}
+                class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line relative"
+                transition:fade={{ duration: 300 }}
             >
                 <p> {post.content} </p>
+                {#if admin}
+                    <button
+                        on:click={() => deletePost(post.id)}
+                        class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
+                        <img src="trash.svg" alt="trash" />
+                    </button>
+                {/if}
             </div>
         {/each}
 
@@ -116,8 +143,8 @@ onMount(() => {
             <button
                 on:click={() => olderPostsShown = !olderPostsShown}
             >
-                <div class="flex gap-2 cursor-pointer border-4 border-transparent 
-                        border-l-gray-600 rounded text-sm w-full p-2 my-1">
+                <div class="flex gap-2 cursor-pointer border-4 border-transparent
+                    border-l-gray-600 rounded text-sm w-full p-2 my-1">
                     {#if olderPostsShown}
                         <img src="caret-down.svg" alt="caret-down" />
                     {:else}
@@ -134,9 +161,16 @@ onMount(() => {
                     {#each olderPosts as post}
                         <div
                             class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
-                            transition:fade={{ delay: 250, duration: 300 }}
+                            transition:fade={{ duration: 300 }}
                         >
                             <p> {post.content} </p>
+                            {#if admin}
+                                <button
+                                    on:click={() => deletePost(post.id)}
+                                    class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
+                                    <img src="trash.svg" alt="trash" />
+                                </button>
+                            {/if}
                         </div>
                     {/each}
                 </div>
@@ -171,7 +205,7 @@ onMount(() => {
                         alt="error img"
                         class="boop pos-y-wiggle"
                     />
-                {:else}
+                    {:else}
                     <img src="send.svg" alt="send img"/>
                 {/if}
             </button>
@@ -300,17 +334,17 @@ position: unset;
 
 /* https://codepen.io/ericrasch/pen/kWWzzk */
 /* .line-behind {
-    display: table;
-    white-space: nowrap;
-    &:before, &:after {
-        border-top: 1px solid #8c8c8c;
-        content: '';
-        display: table-cell;
-        position: relative;
-        top: 0.7em;
-        width: 46%;
-    }
-    &:before { right: 1%; }
-    &:after { left: 1%; }
+display: table;
+white-space: nowrap;
+&:before, &:after {
+border-top: 1px solid #8c8c8c;
+content: '';
+display: table-cell;
+position: relative;
+top: 0.7em;
+width: 46%;
+}
+&:before { right: 1%; }
+&:after { left: 1%; }
 } */
 </style>

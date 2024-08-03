@@ -7,8 +7,12 @@ const postSchema = Joi.string().max(100).required();
 
 /** @type {import('./$types').RequestHandler} */
 export async function POST({ request }) {
-    const { content } = await request.json();
-    let { error, value } = postSchema.validate(content.trim());
+    const data = await request.json();
+    if (!data.content) {
+        return errorRes(400, "invalid post data");
+    }
+
+    let { error, value } = postSchema.validate(data.content.trim());
     if (error !== undefined) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
