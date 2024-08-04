@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import * as Types from "$lib/types";
 
 import * as bcrypt from "bcrypt";
+import { ADMIN_EMAIL, ADMIN_PASSWORD } from "$env/static/private";
 const saltRounds = 10;
 
 const prisma = new PrismaClient();
@@ -89,13 +90,14 @@ async function createAdmin(email, password) {
     return admin;
 }
 
-async function test() {
-    // const admin = await createAdmin("tofs@email.com", "123");
-    // console.log(admin);
-    // console.log(await verifyAdminPassword("tofs@email.com", "123"));
+async function main() {
+    let admins = await prisma.admin.findMany();
+    if (admins.length === 0 && ADMIN_EMAIL && ADMIN_PASSWORD) {
+        createAdmin(ADMIN_EMAIL, ADMIN_PASSWORD);
+    }
 }
 
-test()
+main()
     .then(async () => {
         await prisma.$disconnect();
     })

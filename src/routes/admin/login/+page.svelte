@@ -6,8 +6,10 @@ import { goto } from '$app/navigation';
 $: email = "";
 $: password = "";
 $: disabled = false;
+let error = false;
 
 async function submit() {
+    error = false;
     disabled = true;
 
     /** @type {import('axios').AxiosResponse} */
@@ -17,10 +19,13 @@ async function submit() {
         .catch((err) => err.response);
 
     if (res.status === 200 && res.data?.token) {
+        error = false;
         setCookie("token", res.data.token, 1);
         goto('/');
+        return;
     }
 
+    error = true;
     disabled = false;
 }
 </script>
@@ -28,9 +33,16 @@ async function submit() {
 <div class="w-full h-screen flex justify-center items-center font-medium">
     <div class="p-2 sm:w-[50%] w-[90%] h-[50%] rounded-lg border-2 border-gray-400 flex flex-col justify-between items-center">
         <div class="w-full p-2 text-left mb-5">
-            <h1>Admin Login</h1>
+            <div class="flex gap-2 align-middle">
+                <h1>Admin Login</h1>
+                {#if error}
+                    <h1 class="text-red-500 text-sm mt-1">Incorrect email or password</h1>
+                {/if}
+            </div>
             <hr class="mt-2">
         </div>
+
+
         <form
             on:submit|preventDefault={() => submit()}
             class="flex flex-col gap-4 h-[60%] w-full px-2 mb-5 text-sm">
@@ -60,7 +72,7 @@ async function submit() {
             </div>
 
             <button class="mt-2 h-fit p-2 bg-gray-600 disabled:opacity-70 border border-transparent
-                    hover:border-white rounded-lg text-sm"
+                hover:border-white rounded-lg text-sm"
                 {disabled}>
                 Submit
             </button>
