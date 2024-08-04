@@ -91,8 +91,8 @@ async function createAdmin(email, password) {
 }
 
 async function main() {
-    let admins = await prisma.admin.findMany();
-    if (admins.length === 0 && ADMIN_EMAIL && ADMIN_PASSWORD) {
+    let admins = await prisma.admin.count();
+    if (admins === 0 && ADMIN_EMAIL && ADMIN_PASSWORD) {
         createAdmin(ADMIN_EMAIL, ADMIN_PASSWORD);
     }
 }

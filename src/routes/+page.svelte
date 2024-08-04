@@ -112,20 +112,10 @@ onMount(() => {
 </div>
 
 <div class="h-fit w-full p-2 sm:flex sm:justify-center">
-    <div class="p-3 rounded-lg flex flex-col gap-2 border border-gray-400 sm:w-[80%]">
-        {#if loadingData}
-            <div class="w-full flex justify-center items-center text-sm italic h-40">
-                Loading...
-            </div>
-        {:else if posts.length == 0}
-            <div class="w-full flex justify-center items-center text-sm italic h-40">
-                None yet...
-            </div>
-        {/if}
-
+    <div class="p-3 rounded-lg flex flex-col border border-gray-400 sm:w-[80%] min-h-40">
         {#each posts as post}
             <div
-                class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line relative"
+                class="bg-gray-600 rounded w-fit my-1 p-1 px-2 whitespace-pre-line relative"
                 transition:fade={{ duration: 300 }}
             >
                 <p> {post.content} </p>
@@ -135,6 +125,16 @@ onMount(() => {
                         class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
                         <img src="trash.svg" alt="trash" />
                     </button>
+                {/if}
+            </div>
+        {:else}
+            <div 
+                in:fade={{ delay: 200, duration: 300 }}
+                class="w-full h-full flex justify-center items-center text-sm italic">
+                {#if loadingData}
+                    Loading...
+                {:else}
+                    None yet...
                 {/if}
             </div>
         {/each}
