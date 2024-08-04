@@ -4,7 +4,7 @@ import "../app.css";
 
 <svelte:head>
     <title>IKON Prayer and Praise Requests</title>
-    <link rel="icon" type="image/x-icon" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.png">
 </svelte:head>
 
 <slot />

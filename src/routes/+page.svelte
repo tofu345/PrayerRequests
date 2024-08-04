@@ -123,7 +123,7 @@ onMount(() => {
                     <button
                         on:click={() => deletePost(post.id)}
                         class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
-                        <img src="trash.svg" alt="trash" />
+                        <img src="/trash.svg" alt="trash" />
                     </button>
                 {/if}
             </div>
@@ -146,9 +146,9 @@ onMount(() => {
                 <div class="flex gap-2 cursor-pointer border-4 border-transparent
                     border-l-gray-600 rounded text-sm w-full p-2 my-1">
                     {#if olderPostsShown}
-                        <img src="caret-down.svg" alt="caret-down" />
+                        <img src="/caret-down.svg" alt="caret-down" />
                     {:else}
-                        <img src="caret-right.svg" alt="caret-right" />
+                        <img src="/caret-right.svg" alt="caret-right" />
                     {/if}
                     <p> Last week </p>
                 </div>
@@ -168,7 +168,7 @@ onMount(() => {
                                 <button
                                     on:click={() => deletePost(post.id)}
                                     class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
-                                    <img src="trash.svg" alt="trash" />
+                                    <img src="/trash.svg" alt="trash" />
                                 </button>
                             {/if}
                         </div>
@@ -201,12 +201,12 @@ onMount(() => {
                 {:else if textArea.error}
                     <img
                         id="errorSvg"
-                        src="error.svg"
+                        src="/error.svg"
                         alt="error img"
                         class="boop pos-y-wiggle"
                     />
                     {:else}
-                    <img src="send.svg" alt="send img"/>
+                    <img src="/send.svg" alt="send img"/>
                 {/if}
             </button>
         </form>
