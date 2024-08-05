@@ -229,7 +229,19 @@ onMount(() => {
                     Prayer request
                 </p>
             </button>
-            <button class="w-8 h-full mx-5 rounded" on:click={() => textArea.selectingType = false}>
+            <button 
+                class="w-8 h-full mx-5 rounded" 
+                on:click={() => {
+                    textArea.selectingType = false;
+                    setTimeout(() => {
+                        /** @type {any} */
+                        const textAreaObj = document.getElementById("textarea");
+                        if (textAreaObj) {
+                            textAreaObj.style.height =
+                                Math.min(textAreaObj.value.split("\n").length * 24, 150) + "px";
+                        }
+                    }, 50);
+                }}>
                 <img
                     id="errorSvg"
                     src="/error.svg"
@@ -243,16 +255,16 @@ onMount(() => {
                     submitForm();
                 }}
                 class="pb-4 relative text-lg h-[80%] w-[50%] flex
-                    justify-center items-center border-2 border-transparent
-                    hover:border-gray-400 hover:bg-gray-500 rounded-md
-                    cursor-pointer">
+                justify-center items-center border-2 border-transparent
+                hover:border-gray-400 hover:bg-gray-500 rounded-md
+                cursor-pointer">
                 🎉
                 <p class="absolute bottom-1 text-xs text-gray-100">
                     Praise report
                 </p>
             </button>
         </div>
-    {:else if textArea.visible}
+        {:else if textArea.visible}
         <form
             on:submit|preventDefault={() => submitForm()}
             class="relative w-full sm:w-[80%] h-fit p-2 rounded-lg border-2 border-gray-400 bg-gray-600 flex justify-between">
@@ -263,6 +275,7 @@ onMount(() => {
                 on:keypress={textArea.submitIfShiftEnter}
                 rows="1"
                 placeholder=""
+                id="textarea"
                 class="bg-transparent w-full outline-none resize-none mr-[30px]"
                 use:focusOnCreate
                 maxlength="100"
@@ -275,12 +288,12 @@ onMount(() => {
                         alt="error img"
                         class="boop pos-y-wiggle"
                     />
-                    {:else}
+                {:else}
                     <img src="/send.svg" alt="send img"/>
                 {/if}
             </button>
         </form>
-    {:else}
+        {:else}
         <button
             on:click={() => {textArea.visible = true}}
             class="outline-none border-2 border-transparent hover:border-gray-400 bg-gray-600 rounded-lg h-[44px] w-full sm:w-[80%] p-2 text-sm"
