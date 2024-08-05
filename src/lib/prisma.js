@@ -34,10 +34,18 @@ export async function getPosts() {
     return cache;
 }
 
-/** @param {string} content */
-export async function createPost(content) {
+/**
+ * @param {string} text
+ * @param {boolean} is_prayer_request
+ */
+export async function createPost(text, is_prayer_request) {
     clearCache();
-    return prisma.post.create({ data: { content: content } });
+    return prisma.post.create({
+        data: {
+            text: text,
+            is_prayer_request: is_prayer_request,
+        },
+    });
 }
 
 /** @param {number} id */

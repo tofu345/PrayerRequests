@@ -3,23 +3,25 @@ import { error as errorRes, json } from "@sveltejs/kit";
 import { Prisma } from "@prisma/client";
 import Joi from "joi";
 
-const postSchema = Joi.string().max(100).required();
+const postSchema = Joi.object({
+    text: Joi.string().max(100).required(),
+    is_prayer_request: Joi.boolean().required(),
+});
 
 /** @type {import('./$types').RequestHandler} */
 export async function POST({ request }) {
     const data = await request.json();
-    if (!data.content) {
-        return errorRes(400, "invalid post data");
-    }
-
-    let { error, value } = postSchema.validate(data.content.trim());
+    let { error, value } = postSchema.validate({
+        text: data.text.trim(),
+        is_prayer_request: data.is_prayer_request,
+    });
     if (error !== undefined) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 
     let obj = null;
     try {
-        obj = await createPost(value);
+        obj = await createPost(value.text, value.is_prayer_request);
     } catch (e) {
         if (e instanceof Prisma.PrismaClientKnownRequestError) {
             return errorRes(400, e);

@@ -17,7 +17,8 @@ model Admin {
 }
 
 model Post {
-    id        Int      @id @default(autoincrement())
-    content   String
-    createdAt DateTime @default(now())
+    id                  Int      @id @default(autoincrement())
+    text                String
+    is_prayer_request   Boolean
+    createdAt           DateTime @default(now())
 }

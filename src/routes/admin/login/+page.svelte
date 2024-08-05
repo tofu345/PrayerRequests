@@ -31,7 +31,7 @@ async function submit() {
 </script>
 
 <div class="w-full h-screen flex justify-center items-center font-medium">
-    <div class="p-2 sm:w-[50%] w-[90%] h-[50%] rounded-lg border-2 border-gray-400 flex flex-col justify-between items-center">
+    <div class="p-2 sm:w-[50%] w-[90%] h-fit rounded-lg border-2 border-gray-400 flex flex-col justify-between items-center">
         <div class="w-full p-2 text-left mb-5">
             <div class="flex gap-2 align-middle">
                 <h1>Admin Login</h1>

@@ -1,6 +1,8 @@
 <script>
 import axios from '$lib/axios';
+import moment from 'moment';
 import { onMount } from 'svelte';
+import { flip } from 'svelte/animate';
 import { fade, slide } from 'svelte/transition';
 import * as Types from "$lib/types"
 
@@ -18,28 +20,28 @@ $: olderPosts = [];
 let olderPostsShown = false;
 
 async function submitForm() {
-    textArea.submitting = true;
-    textArea.error = true;
-
-    if (textArea.value.trim() === "") {
-        textArea.submitting = false;
-        textArea.error = true;
-        setTimeout(() => {
-            textArea.error = false;
-        }, 1000);
+    if (textArea.is_prayer_request === null) {
+        textArea.selectingType = true;
         return;
     }
 
+    textArea.submitting = true;
+    textArea.selectingType = false;
+    textArea.error = false;
+
     /** @type {import('axios').AxiosResponse} */
     const res = await axios
-        .post("/api/create-post", { content: textArea.value })
+        .post("/api/create-post", {
+            text: textArea.value,
+            is_prayer_request: textArea.is_prayer_request
+        })
         .then((res) => res)
         .catch((err) => err.response);
+
+    textArea.is_prayer_request = null;
     if (res.status === 400) {
         textArea.submitting = false;
         textArea.error = true;
-
-        console.error(res.data);
 
         setTimeout(() => {
             textArea.error = false;
@@ -51,12 +53,16 @@ async function submitForm() {
     posts = posts; // svelte-tings
     textArea.value = "";
     textArea.submitting = false;
+    textArea.selectingType = false;
     textArea.visible = false;
     textArea.error = false;
 }
 
 const textArea = {
     value: "",
+    /** @type {boolean|null} */
+    is_prayer_request: null,
+    selectingType: false,
     error: false,
     visible: false,
     submitting: false,
@@ -83,7 +89,7 @@ async function deletePost(id) {
     if (!window.confirm("Are you sure?")) {
         return;
     }
-    
+
     /** @type {import('axios').AxiosResponse} */
     const res = await axios
         .post("/api/delete-post", { id })
@@ -95,12 +101,19 @@ async function deletePost(id) {
     }
 }
 
+/** @param {Types.Post} post */
+function timeDisplay(post) {
+    return moment(post.createdAt).format("ddd HH:mm");
+}
+
 onMount(() => {
-    let date = new Date();
-    date.setDate(date.getDate() - date.getDay() - 7);
-    posts = data.posts.filter(v => v.createdAt >= date);
-    olderPosts = data.posts.filter(v => v.createdAt < date);
-    loadingData = false;
+    if (data.posts) {
+        let date = new Date();
+        date.setDate(date.getDate() - date.getDay() - 7);
+        posts = data.posts.filter(v => v.createdAt >= date);
+        olderPosts = data.posts.filter(v => v.createdAt < date);
+        loadingData = false;
+    }
 });
 </script>
 
@@ -112,23 +125,37 @@ onMount(() => {
 </div>
 
 <div class="h-fit w-full p-2 sm:flex sm:justify-center">
-    <div class="p-3 rounded-lg flex flex-col border border-gray-400 sm:w-[80%] min-h-40">
-        {#each posts as post}
+    <div class="p-3 rounded-lg flex flex-col border border-gray-500 sm:w-[80%] min-h-40">
+        {#each posts as post (post.id)}
             <div
-                class="bg-gray-600 rounded w-fit my-1 p-1 px-2 whitespace-pre-line relative"
+                class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
                 transition:fade={{ duration: 300 }}
+                animate:flip={{ delay: 200, duration: 200 }}
             >
-                <p> {post.content} </p>
+                <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
+                <div
+                    class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
+                >
+                    {#if post.is_prayer_request}
+                        🙏
+                    {:else}
+                        🎉
+                    {/if}
+                </div>
+                <div
+                    class="w-fit absolute -bottom-[2px] -right-16 text-xs text-gray-300">
+                    {timeDisplay(post)}
+                </div>
                 {#if admin}
                     <button
                         on:click={() => deletePost(post.id)}
-                        class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
+                        class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
                         <img src="/trash.svg" alt="trash" />
                     </button>
                 {/if}
             </div>
         {:else}
-            <div 
+            <div
                 in:fade={{ delay: 200, duration: 300 }}
                 class="w-full h-full flex justify-center items-center text-sm italic">
                 {#if loadingData}
@@ -163,7 +190,7 @@ onMount(() => {
                             class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
                             transition:fade={{ duration: 300 }}
                         >
-                            <p> {post.content} </p>
+                            <p> {post.text} </p>
                             {#if admin}
                                 <button
                                     on:click={() => deletePost(post.id)}
@@ -180,7 +207,52 @@ onMount(() => {
 </div>
 
 <div class="w-full p-2 lg:mx-50 mb-2 flex justify-center">
-    {#if textArea.visible}
+    {#if textArea.submitting}
+        <div
+            class="flex justify-center items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
+            <div class="loader"></div>
+        </div>
+    {:else if textArea.selectingType}
+        <div
+            class="flex justify-between items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
+            <button
+                on:click={() => {
+                    textArea.is_prayer_request = true;
+                    submitForm();
+                }}
+                class="pb-4 relative text-lg h-[80%] w-[50%] flex
+                    justify-center items-center border-2 border-transparent
+                    hover:border-gray-400 hover:bg-gray-500 rounded-md
+                    cursor-pointer">
+                🙏
+                <p class="absolute bottom-1 text-xs text-gray-100">
+                    Prayer request
+                </p>
+            </button>
+            <button class="w-8 h-full mx-5 rounded" on:click={() => textArea.selectingType = false}>
+                <img
+                    id="errorSvg"
+                    src="/error.svg"
+                    alt="error img"
+                    class="w-full"
+                />
+            </button>
+            <button
+                on:click={() => {
+                    textArea.is_prayer_request = false;
+                    submitForm();
+                }}
+                class="pb-4 relative text-lg h-[80%] w-[50%] flex
+                    justify-center items-center border-2 border-transparent
+                    hover:border-gray-400 hover:bg-gray-500 rounded-md
+                    cursor-pointer">
+                🎉
+                <p class="absolute bottom-1 text-xs text-gray-100">
+                    Praise report
+                </p>
+            </button>
+        </div>
+    {:else if textArea.visible}
         <form
             on:submit|preventDefault={() => submitForm()}
             class="relative w-full sm:w-[80%] h-fit p-2 rounded-lg border-2 border-gray-400 bg-gray-600 flex justify-between">
@@ -196,9 +268,7 @@ onMount(() => {
                 maxlength="100"
             />
             <button class="bg-transparent p-1 absolute top-[0.25rem] right-1">
-                {#if textArea.submitting}
-                    <span class="loader"></span>
-                {:else if textArea.error}
+                {#if textArea.error}
                     <img
                         id="errorSvg"
                         src="/error.svg"
