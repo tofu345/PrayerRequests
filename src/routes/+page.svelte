@@ -20,6 +20,15 @@ $: olderPosts = [];
 let olderPostsShown = false;
 
 async function submitForm() {
+    if (!textArea.value) {
+        textArea.error = true;
+
+        setTimeout(() => {
+            textArea.error = false;
+        }, 1000);
+        return;
+    }
+
     if (textArea.is_prayer_request === null) {
         textArea.selectingType = true;
         return;
