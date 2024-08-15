@@ -120,8 +120,10 @@ onMount(() => {
 });
 </script>
 
-<div class="w-full flex justify-center mt-2">
-    <a href="https://www.ikon.church" class="font-bold text-2xl">IKON</a>
+<div class="w-full flex justify-center mt-4">
+    <a href="https://www.ikon.church">
+        <img class="h-10" src="/IKON-Logo.png" alt="IKON" />
+    </a>
 </div>
 <div class="w-full flex justify-center mb-2">
     <p class="text-sm">Prayer and Praise Requests</p>
@@ -137,7 +139,8 @@ onMount(() => {
             {#each posts as post (post.id)}
                 <div
                     class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
-                    transition:fade={{ duration: 200 }}
+                    in:fade={{ delay: 200, duration: 200 }}
+                    out:fade={{ duration: 200 }}
                     animate:flip={{ delay: 200, duration: 200 }}
                 >
                     <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
