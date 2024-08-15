@@ -30,6 +30,9 @@ export async function getPosts() {
         where: {
             createdAt: { gt: secondToTheLastSunday() },
         },
+        orderBy: {
+            createdAt: 'desc',
+        },
     });
     return cache;
 }

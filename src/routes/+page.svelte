@@ -58,7 +58,7 @@ async function submitForm() {
         return;
     }
 
-    posts.push(res.data);
+    posts.splice(0, 0, res.data);
     posts = posts; // svelte-tings
     textArea.value = "";
     textArea.submitting = false;
@@ -238,8 +238,8 @@ onMount(() => {
                     Prayer request
                 </p>
             </button>
-            <button 
-                class="w-8 h-full mx-5 rounded" 
+            <button
+                class="w-8 h-full mx-5 rounded"
                 on:click={() => {
                     textArea.selectingType = false;
                     setTimeout(() => {
