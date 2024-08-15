@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import * as Types from "$lib/types";
 
 import * as bcrypt from "bcrypt";
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from "$env/static/private";
@@ -7,7 +6,7 @@ const saltRounds = 10;
 
 const prisma = new PrismaClient();
 
-/** @type {Types.Post[] | null} */
+/** @type {import('@prisma/client').Post[] | null} */
 let cache = null;
 
 export function clearCache() {
@@ -31,7 +30,7 @@ export async function getPosts() {
             createdAt: { gt: secondToTheLastSunday() },
         },
         orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
         },
     });
     return cache;
@@ -82,7 +81,7 @@ export async function verifyAdminPassword(email, password) {
 
 /**
  * @param {string} email
- * @returns {Promise<Types.Admin | null>}
+ * @returns {Promise<import('@prisma/client').Admin | null>}
  */
 export async function getAdmin(email) {
     return prisma.admin.findFirst({ where: { email } });
@@ -91,7 +90,7 @@ export async function getAdmin(email) {
 /**
  * @param {string} email
  * @param {string} password
- * @returns {Promise<Types.Admin>}
+ * @returns {Promise<import('@prisma/client').Admin>}
  */
 async function createAdmin(email, password) {
     const hash = await bcrypt.hash(password, saltRounds);

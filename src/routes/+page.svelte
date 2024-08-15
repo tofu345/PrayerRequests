@@ -2,9 +2,8 @@
 import axios from '$lib/axios';
 import moment from 'moment';
 import { onMount } from 'svelte';
+import { slide, fade } from 'svelte/transition';
 import { flip } from 'svelte/animate';
-import { fade, slide } from 'svelte/transition';
-import * as Types from "$lib/types"
 
 /** @type {import('./$types').PageData} */
 export let data;
@@ -13,9 +12,9 @@ let loadingData = true;
 /** @type {string} */
 const admin = data.admin;
 
-/** @type {Types.Post[]} */
+/** @type {import('@prisma/client').Post[]} */
 $: posts = [];
-/** @type {Types.Post[]} */
+/** @type {import('@prisma/client').Post[]} */
 $: olderPosts = [];
 let olderPostsShown = false;
 
@@ -67,6 +66,23 @@ async function submitForm() {
     textArea.error = false;
 }
 
+/** @param {number} id */
+async function deletePost(id) {
+    if (!window.confirm("Are you sure?")) {
+        return;
+    }
+
+    /** @type {import('axios').AxiosResponse} */
+    const res = await axios
+        .post("/api/delete-post", { id })
+        .then((res) => res)
+        .catch((err) => err.response);
+    if (res.status === 200) {
+        posts = posts.filter(v => v.id != id);
+        olderPosts = olderPosts.filter(v => v.id != id);
+    }
+}
+
 const textArea = {
     value: "",
     /** @type {boolean|null} */
@@ -93,28 +109,6 @@ function focusOnCreate(el) {
     el.focus();
 }
 
-/** @param {number} id */
-async function deletePost(id) {
-    if (!window.confirm("Are you sure?")) {
-        return;
-    }
-
-    /** @type {import('axios').AxiosResponse} */
-    const res = await axios
-        .post("/api/delete-post", { id })
-        .then((res) => res)
-        .catch((err) => err.response);
-    if (res.status === 200) {
-        posts = posts.filter(v => v.id != id);
-        olderPosts = olderPosts.filter(v => v.id != id);
-    }
-}
-
-/** @param {Types.Post} post */
-function timeDisplay(post) {
-    return moment(post.createdAt).format("ddd HH:mm");
-}
-
 onMount(() => {
     if (data.posts) {
         let date = new Date();
@@ -135,75 +129,78 @@ onMount(() => {
 
 <div class="h-fit w-full p-2 sm:flex sm:justify-center">
     <div class="p-3 rounded-lg flex flex-col border border-gray-500 sm:w-[80%] min-h-40">
-        {#each posts as post (post.id)}
-            <div
-                class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
-                transition:fade={{ duration: 300 }}
-                animate:flip={{ delay: 200, duration: 200 }}
-            >
-                <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
-                <div
-                    class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
-                >
-                    {#if post.is_prayer_request}
-                        🙏
-                    {:else}
-                        🎉
-                    {/if}
-                </div>
-                <div
-                    class="w-fit absolute -bottom-[2px] -right-16 text-xs text-gray-300">
-                    {timeDisplay(post)}
-                </div>
-                {#if admin}
-                    <button
-                        on:click={() => deletePost(post.id)}
-                        class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
-                        <img src="/trash.svg" alt="trash" />
-                    </button>
-                {/if}
+        {#if loadingData}
+            <div class="w-full h-36 flex justify-center items-center text-sm italic">
+                Loading...
             </div>
         {:else}
-            <div
-                in:fade={{ delay: 200, duration: 300 }}
-                class="w-full h-full flex justify-center items-center text-sm italic">
-                {#if loadingData}
-                    Loading...
-                {:else}
-                    None yet...
-                {/if}
-            </div>
-        {/each}
-
-        {#if !loadingData && olderPosts.length != 0}
-            <button
-                on:click={() => olderPostsShown = !olderPostsShown}
-            >
-                <div class="flex gap-2 cursor-pointer border-4 border-transparent
-                    border-l-gray-600 rounded text-sm w-full p-2 my-1">
-                    {#if olderPostsShown}
-                        <img src="/caret-down.svg" alt="caret-down" />
-                    {:else}
-                        <img src="/caret-right.svg" alt="caret-right" />
+            {#each posts as post (post.id)}
+                <div
+                    class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
+                    transition:fade={{ duration: 200 }}
+                    animate:flip={{ delay: 200, duration: 200 }}
+                >
+                    <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
+                    <div
+                        class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
+                    >
+                        {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
+                    </div>
+                    <div
+                        class="w-fit absolute -bottom-[2px] -right-16 text-xs text-gray-300">
+                        {moment(post.createdAt).format("ddd HH:mm")}
+                    </div>
+                    {#if admin}
+                        <button
+                            on:click={() => deletePost(post.id)}
+                            class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
+                            <img src="/trash.svg" alt="trash" />
+                        </button>
                     {/if}
-                    <p> Last week </p>
                 </div>
-            </button>
-        {/if}
+            {:else}
+                <div class="w-full h-36 flex justify-center items-center text-sm italic">
+                    None yet...
+                </div>
+            {/each}
 
-        <div class="ml-0">
+            {#if olderPosts.length != 0}
+                <button
+                    on:click={() => olderPostsShown = !olderPostsShown}
+                    out:fade={{ delay: 300, duration: 0 }}
+                >
+                    <div class="flex gap-2 cursor-pointer border-4 border-transparent border-l-gray-600 rounded text-sm w-full p-2 my-1">
+                        {#if olderPostsShown}
+                            <img src="/caret-down.svg" alt="caret-down" />
+                        {:else}
+                            <img src="/caret-right.svg" alt="caret-right" />
+                        {/if}
+                        <p> Last week </p>
+                    </div>
+                </button>
+            {/if}
+
             {#if olderPostsShown}
-                <div class="flex flex-col gap-2" transition:slide={{ duration: 300 }}>
-                    {#each olderPosts as post}
+                <div class="pl-1 w-full flex flex-col gap-2" transition:slide={{ duration: 300 }}>
+                    {#each olderPosts as post (post.id)}
                         <div
-                            class="bg-gray-600 rounded w-fit p-1 px-2 whitespace-pre-line"
+                            class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
                             transition:fade={{ duration: 300 }}
                         >
-                            <p> {post.text} </p>
+                            <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
+                            <div
+                                class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
+                            >
+                                {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
+                            </div>
+                            <div
+                                class="w-fit absolute -bottom-[2px] -right-16 text-xs text-gray-300">
+                                {moment(post.createdAt).format("ddd HH:mm")}
+                            </div>
                             {#if admin}
                                 <button
                                     on:click={() => deletePost(post.id)}
-                                    class="absolute inset-y-1 -right-7 h-6 bg-red-400 p-[3px] rounded border border-transparent">
+                                    class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
                                     <img src="/trash.svg" alt="trash" />
                                 </button>
                             {/if}
@@ -211,7 +208,7 @@ onMount(() => {
                     {/each}
                 </div>
             {/if}
-        </div>
+        {/if}
     </div>
 </div>
 
