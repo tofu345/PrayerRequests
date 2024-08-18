@@ -168,7 +168,7 @@ onMount(() => {
             {/each}
 
             {#if olderPosts.length != 0}
-                <div class="relative h-[36px] my-1">
+                <div class="relative h-[30px] my-1">
                     <button
                         on:click={() => olderPostsShown = !olderPostsShown}
                         out:fade={{ delay: 300, duration: 0 }}
