@@ -173,7 +173,7 @@ onMount(() => {
                         on:click={() => olderPostsShown = !olderPostsShown}
                         out:fade={{ delay: 300, duration: 0 }}
                     >
-                        <div class="absolute top-0 -left-3 flex gap-2 border-4 border-transparent border-l-gray-600 rounded cursor-pointer text-sm w-full p-2">
+                        <div class="p-2 absolute -top-0 -left-[0.8rem] flex items-center gap-2 cursor-pointer text-sm w-full">
                             {#if olderPostsShown}
                                 <img src="/caret-down.svg" alt="caret-down" />
                             {:else}
