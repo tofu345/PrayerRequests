@@ -168,19 +168,21 @@ onMount(() => {
             {/each}
 
             {#if olderPosts.length != 0}
-                <button
-                    on:click={() => olderPostsShown = !olderPostsShown}
-                    out:fade={{ delay: 300, duration: 0 }}
-                >
-                    <div class="flex gap-2 cursor-pointer border-4 border-transparent border-l-gray-600 rounded text-sm w-full p-2 my-1">
-                        {#if olderPostsShown}
-                            <img src="/caret-down.svg" alt="caret-down" />
-                        {:else}
-                            <img src="/caret-right.svg" alt="caret-right" />
-                        {/if}
-                        <p> Last week </p>
-                    </div>
-                </button>
+                <div class="relative h-[36px] my-1">
+                    <button
+                        on:click={() => olderPostsShown = !olderPostsShown}
+                        out:fade={{ delay: 300, duration: 0 }}
+                    >
+                        <div class="absolute top-0 -left-3 flex gap-2 border-4 border-transparent border-l-gray-600 rounded cursor-pointer text-sm w-full p-2">
+                            {#if olderPostsShown}
+                                <img src="/caret-down.svg" alt="caret-down" />
+                            {:else}
+                                <img src="/caret-right.svg" alt="caret-right" />
+                            {/if}
+                            <p> Last week </p>
+                        </div>
+                    </button>
+                </div>
             {/if}
 
             {#if olderPostsShown}
