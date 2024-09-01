@@ -91,10 +91,9 @@ const textArea = {
     error: false,
     visible: false,
     submitting: false,
-    /** @param {any} event */
-    autoExpand: function(event) {
-        event.target.style.height =
-            Math.min(this.value.split("\n").length * 24, 150) + "px";
+    /** @param {any} e */
+    autoExpandEvent: function (e) { 
+        autoExpand(e.target);
     },
     /** @param {KeyboardEvent} e */
     submitIfShiftEnter: async function(e) {
@@ -102,6 +101,11 @@ const textArea = {
             await submitForm();
         }
     }
+}
+
+/** @param {any} obj */
+function autoExpand (obj) {
+    obj.style.height = Math.min(obj.scrollHeight, 150) + "px";
 }
 
 /** @param {HTMLTextAreaElement} el */
@@ -247,11 +251,8 @@ onMount(() => {
                     textArea.selectingType = false;
                     setTimeout(() => {
                         /** @type {any} */
-                        const textAreaObj = document.getElementById("textarea");
-                        if (textAreaObj) {
-                            textAreaObj.style.height =
-                                Math.min(textAreaObj.value.split("\n").length * 24, 150) + "px";
-                        }
+                        const obj = document.getElementById("textarea");
+                        if (obj) { autoExpand(obj); }
                     }, 50);
                 }}>
                 <img
@@ -283,7 +284,7 @@ onMount(() => {
             <textarea
                 disabled={textArea.submitting}
                 bind:value={textArea.value}
-                on:input={textArea.autoExpand}
+                on:input={textArea.autoExpandEvent}
                 on:keypress={textArea.submitIfShiftEnter}
                 rows="1"
                 placeholder=""
