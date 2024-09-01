@@ -290,7 +290,7 @@ onMount(() => {
                 id="textarea"
                 class="bg-transparent w-full outline-none resize-none mr-[30px]"
                 use:focusOnCreate
-                maxlength="100"
+                maxlength="280"
             />
             <button class="bg-transparent p-1 absolute top-[0.25rem] right-1">
                 {#if textArea.error}

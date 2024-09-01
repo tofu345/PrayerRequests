@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import Joi from "joi";
 
 const postSchema = Joi.object({
-    text: Joi.string().max(100).required(),
+    text: Joi.string().max(280).required(),
     is_prayer_request: Joi.boolean().required(),
 });
 
