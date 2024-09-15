@@ -92,7 +92,7 @@ const textArea = {
     visible: false,
     submitting: false,
     /** @param {any} e */
-    autoExpandEvent: function (e) { 
+    autoExpandEvent: function (e) {
         autoExpand(e.target);
     },
     /** @param {KeyboardEvent} e */
@@ -116,7 +116,11 @@ function focusOnCreate(el) {
 onMount(() => {
     if (data.posts) {
         let date = new Date();
-        date.setDate(date.getDate() - date.getDay() - 7);
+        if (date.getDay() == 0) {
+            date.setDate(date.getDate() - 7);
+        } else {
+            date.setDate(date.getDate() - date.getDay());
+        }
         posts = data.posts.filter(v => v.createdAt >= date);
         olderPosts = data.posts.filter(v => v.createdAt < date);
         loadingData = false;
