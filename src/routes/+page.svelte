@@ -146,7 +146,7 @@ onMount(() => {
         {:else}
             {#each posts as post (post.id)}
                 <div
-                    class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
+                    class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-5 m-1 relative"
                     in:fade={{ delay: 200, duration: 200 }}
                     out:fade={{ duration: 200 }}
                     animate:flip={{ delay: 200, duration: 200 }}
@@ -158,7 +158,7 @@ onMount(() => {
                         {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
                     </div>
                     <div
-                        class="w-fit absolute -bottom-[2px] -right-16 text-xs text-gray-300">
+                        class="w-fit absolute -bottom-[2px] -right-[3.78rem] text-xs text-gray-300">
                         {moment(post.createdAt).format("ddd HH:mm")}
                     </div>
                     {#if admin}
@@ -182,7 +182,7 @@ onMount(() => {
                         on:click={() => olderPostsShown = !olderPostsShown}
                         out:fade={{ delay: 300, duration: 0 }}
                     >
-                        <div class="p-2 absolute -top-0 -left-[0.8rem] flex items-center gap-2 cursor-pointer text-sm w-full">
+                        <div class="p-2 absolute -top-0 -left-[0.7rem] flex items-center gap-[0.4rem] cursor-pointer text-sm w-full">
                             {#if olderPostsShown}
                                 <img src="/caret-down.svg" alt="caret-down" />
                             {:else}
@@ -195,7 +195,7 @@ onMount(() => {
             {/if}
 
             {#if olderPostsShown}
-                <div class="pl-1 w-full flex flex-col gap-2" transition:slide={{ duration: 300 }}>
+                <div class="pl-1 w-full flex flex-col" transition:slide={{ duration: 300 }}>
                     {#each olderPosts as post (post.id)}
                         <div
                             class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
@@ -208,7 +208,7 @@ onMount(() => {
                                 {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
                             </div>
                             <div
-                                class="w-fit absolute -bottom-[2px] -right-16 text-xs text-gray-300">
+                                class="w-fit absolute -bottom-[2px] -right-[3.78rem] text-xs text-gray-300">
                                 {moment(post.createdAt).format("ddd HH:mm")}
                             </div>
                             {#if admin}
