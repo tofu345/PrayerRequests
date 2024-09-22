@@ -13,12 +13,25 @@ export function clearCache() {
     cache = null;
 }
 
+/** @returns {Date} */
+export function startOfLastWeek() {
+    let date = new Date();
+    date.setDate(date.getDate() - date.getDay() - 13);
+    date.setUTCHours(0);
+    date.setUTCMinutes(0);
+    date.setUTCSeconds(0);
+    return date;
+}
+
 export async function getPosts() {
     if (cache != null) {
         return cache;
     }
 
     cache = await prisma.post.findMany({
+        where: {
+            createdAt: { gt: startOfLastWeek() },
+        },
         orderBy: {
             createdAt: "desc",
         },
@@ -48,12 +61,7 @@ export async function deletePost(id) {
 
 export async function deleteOldPosts() {
     clearCache();
-    let date = new Date();
-    date.setDate(date.getDate() - date.getDay() - 13);
-    date.setUTCHours(0);
-    date.setUTCMinutes(0);
-    date.setUTCSeconds(0);
-    return prisma.post.deleteMany({ where: { createdAt: { lt: date } } });
+    return prisma.post.deleteMany({ where: { createdAt: { lt: startOfLastWeek() } } });
 }
 
 /**
