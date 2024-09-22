@@ -125,8 +125,8 @@ onMount(() => {
         } else {
             lastSunday.setDate(lastSunday.getDate() - weekDay);
         }
-        posts = data.posts.filter(v => v.createdAt >= lastSunday);
-        olderPosts = data.posts.filter(v => v.createdAt < lastSunday);
+        posts = data.posts.filter(v => v.createdAt > lastSunday);
+        olderPosts = data.posts.filter(v => v.createdAt <= lastSunday);
         loadingData = false;
     }
 });
