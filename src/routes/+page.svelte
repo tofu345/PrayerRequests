@@ -114,21 +114,14 @@ function focusOnCreate(el) {
 }
 
 onMount(() => {
-    if (data.posts) {
-        let lastSunday = new Date();
-        lastSunday.setUTCHours(0);
-        lastSunday.setUTCMinutes(0);
-        lastSunday.setUTCSeconds(0);
-        let weekDay = lastSunday.getDay();
-        if (weekDay == 0) {
-            lastSunday.setDate(lastSunday.getDate() - 7);
-        } else {
-            lastSunday.setDate(lastSunday.getDate() - weekDay);
-        }
-        posts = data.posts.filter(v => v.createdAt > lastSunday);
-        olderPosts = data.posts.filter(v => v.createdAt <= lastSunday);
-        loadingData = false;
-    }
+    let today = new Date();
+    let dayOfWeek = today.getDay();
+    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 7 : dayOfWeek)
+    let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 13, 30, 0); // 13:30 last sunday
+    posts = data.posts.filter(v => v.createdAt > lastSunday);
+    olderPosts = data.posts.filter(v => v.createdAt <= lastSunday);
+
+    loadingData = false;
 });
 </script>
 
