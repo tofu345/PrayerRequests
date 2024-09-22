@@ -18,7 +18,8 @@ export async function handle({ event, resolve }) {
 
 console.log("> init cron worker");
 CronJob.from({
-    cronTime: "30 13 * * 0", // “At 13:30 on Sunday.”
+    cronTime: "* * * * *", // “At 13:30 on Sunday.”
+    // cronTime: "30 13 * * 0", // “At 13:30 on Sunday.”
     onTick: async function () {
         let deletedPosts = await deleteOldPosts();
         if (deletedPosts.count > 0) {
