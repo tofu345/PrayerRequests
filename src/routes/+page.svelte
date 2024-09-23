@@ -116,7 +116,7 @@ function focusOnCreate(el) {
 onMount(() => {
     let today = new Date();
     let dayOfWeek = today.getDay();
-    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 7 : dayOfWeek)
+    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 7 : dayOfWeek + 1)
     let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 13, 30, 0); // 13:30 last sunday
     posts = data.posts.filter(v => v.createdAt > lastSunday);
     olderPosts = data.posts.filter(v => v.createdAt <= lastSunday);
