@@ -28,19 +28,14 @@ export async function getPosts() {
         return cache;
     }
 
-    let deletedPosts = await deleteOldPosts();
+    let deletedPosts = await prisma.post.deleteMany({
+        where: { createdAt: { lt: startOfLastWeek() } },
+    });
     if (deletedPosts.count > 0) {
         console.log(`> Deleted ${deletedPosts.count} old posts`);
     }
 
-    cache = await prisma.post.findMany({
-        where: {
-            createdAt: { gt: startOfLastWeek() },
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
-    });
+    cache = await prisma.post.findMany({ orderBy: { createdAt: "desc" } });
     return cache;
 }
 
@@ -62,13 +57,6 @@ export async function createPost(text, is_prayer_request) {
 export async function deletePost(id) {
     clearCache();
     return prisma.post.deleteMany({ where: { id } });
-}
-
-export async function deleteOldPosts() {
-    clearCache();
-    return prisma.post.deleteMany({
-        where: { createdAt: { lt: startOfLastWeek() } },
-    });
 }
 
 /**
