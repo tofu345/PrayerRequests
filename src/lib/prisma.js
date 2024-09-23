@@ -28,6 +28,11 @@ export async function getPosts() {
         return cache;
     }
 
+    let deletedPosts = await deleteOldPosts();
+    if (deletedPosts.count > 0) {
+        console.log(`> Deleted ${deletedPosts.count} old posts`);
+    }
+
     cache = await prisma.post.findMany({
         where: {
             createdAt: { gt: startOfLastWeek() },
@@ -61,7 +66,9 @@ export async function deletePost(id) {
 
 export async function deleteOldPosts() {
     clearCache();
-    return prisma.post.deleteMany({ where: { createdAt: { lt: startOfLastWeek() } } });
+    return prisma.post.deleteMany({
+        where: { createdAt: { lt: startOfLastWeek() } },
+    });
 }
 
 /**
