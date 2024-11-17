@@ -1,8 +1,7 @@
 import { deletePost } from "$lib/prisma";
-import { error as errorRes, json } from "@sveltejs/kit";
+import { error as errorRes, json, type RequestHandler } from "@sveltejs/kit";
 
-/** @type {import('./$types').RequestHandler} */
-export async function POST({ request, locals }) {
+export const POST: RequestHandler = async function({ request, locals }) {
     if (!locals.admin) {
         return errorRes(401, "unauthorized");
     }

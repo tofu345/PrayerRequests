@@ -1,129 +1,109 @@
-<script>
+<script lang="ts">
 import axios from '$lib/axios';
-import moment from 'moment';
 import { onMount } from 'svelte';
 import { slide, fade } from 'svelte/transition';
-import { flip } from 'svelte/animate';
 
-/** @type {import('./$types').PageData} */
-export let data;
-let loadingData = true;
+import Posts from '$lib/Posts.svelte';
+import SelectButton from '$lib/SelectButton.svelte';
+import { preventDefault } from '$lib/utils';
+import { deleteCookie } from '$lib/cookie';
 
-/** @type {string} */
-const admin = data.admin;
+import type { PageData } from './$types';
+import type { AxiosResponse } from 'axios';
 
-/** @type {import('@prisma/client').Post[]} */
-$: posts = [];
-/** @type {import('@prisma/client').Post[]} */
-$: olderPosts = [];
-let olderPostsShown = false;
+let { data }: { data: PageData }  = $props();
+let loading = $state(true);
 
-async function submitForm() {
-    if (!textArea.value) {
-        textArea.error = true;
+let today = new Date();
+let dayOfWeek = today.getDay();
+let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek)
+let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
 
-        setTimeout(() => {
-            textArea.error = false;
-        }, 1000);
+let posts = $state(data.posts.filter(v => v.createdAt > lastSunday));
+let oldPosts = $state(data.posts.filter(v => v.createdAt <= lastSunday));
+let oldPostsShown = $state(false);
+
+const States = {
+    button: 0,
+    textarea: 1,
+    select: 2,
+    submit: 3
+};
+let currentState = $state(States.button);
+let disabled = $derived(currentState == States.submit);
+let isPrayerRequest: boolean | null = null;
+let submitErr = $state(false); // maybe event to trigger the animation? or js animation?
+let text = $state("");
+
+async function submitOnShiftEnter(e: KeyboardEvent) {
+    if (e.key == "Enter" && e.shiftKey) {
+        await submitForm(e);
+    }
+}
+
+// wait for animation
+function animationDelay() {
+    submitErr = true;
+    setTimeout(() => {
+        submitErr = false;
+    }, 1000);
+}
+
+async function submitForm(_event: Event) {
+    if (text === "") {
+        return animationDelay();
+    }
+
+    if (isPrayerRequest === null) {
+        currentState = States.select;
         return;
     }
 
-    if (textArea.is_prayer_request === null) {
-        textArea.selectingType = true;
-        return;
-    }
+    currentState = States.submit;
+    submitErr = false;
 
-    textArea.submitting = true;
-    textArea.selectingType = false;
-    textArea.error = false;
-
-    /** @type {import('axios').AxiosResponse} */
-    const res = await axios
+    const res: AxiosResponse = await axios
         .post("/api/create-post", {
-            text: textArea.value,
-            is_prayer_request: textArea.is_prayer_request
+            text,
+            is_prayer_request: isPrayerRequest
         })
         .then((res) => res)
         .catch((err) => err.response);
+    isPrayerRequest = null;
 
-    textArea.is_prayer_request = null;
     if (res.status === 400) {
-        textArea.submitting = false;
-        textArea.error = true;
-
-        setTimeout(() => {
-            textArea.error = false;
-        }, 1000);
-        return;
+        currentState = States.textarea;
+        return animationDelay();
     }
 
-    posts.splice(0, 0, res.data);
-    posts = posts; // svelte-tings
-    textArea.value = "";
-    textArea.submitting = false;
-    textArea.selectingType = false;
-    textArea.visible = false;
-    textArea.error = false;
+    posts.splice(0, 0, res.data); // insert at beginning
+    text = "";
+    currentState = States.button;
 }
 
-/** @param {number} id */
-async function deletePost(id) {
-    if (!window.confirm("Are you sure?")) {
-        return;
-    }
-
-    /** @type {import('axios').AxiosResponse} */
-    const res = await axios
-        .post("/api/delete-post", { id })
-        .then((res) => res)
-        .catch((err) => err.response);
-    if (res.status === 200) {
-        posts = posts.filter(v => v.id != id);
-        olderPosts = olderPosts.filter(v => v.id != id);
-    }
-}
-
-const textArea = {
-    value: "",
-    /** @type {boolean|null} */
-    is_prayer_request: null,
-    selectingType: false,
-    error: false,
-    visible: false,
-    submitting: false,
-    /** @param {any} e */
-    autoExpandEvent: function (e) {
-        autoExpand(e.target);
-    },
-    /** @param {KeyboardEvent} e */
-    submitIfShiftEnter: async function(e) {
-        if (e.key == "Enter" && e.shiftKey) {
-            await submitForm();
-        }
-    }
-}
-
-/** @param {any} obj */
-function autoExpand (obj) {
+function autoExpand (obj: any) {
     obj.style.height = Math.min(obj.scrollHeight, 150) + "px";
 }
 
-/** @param {HTMLTextAreaElement} el */
-function focusOnCreate(el) {
+function focusOnCreate(el: HTMLTextAreaElement) {
     el.focus();
 }
 
 onMount(() => {
-    let today = new Date();
-    let dayOfWeek = today.getDay();
-    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek)
-    let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
-    posts = data.posts.filter(v => v.createdAt > lastSunday);
-    olderPosts = data.posts.filter(v => v.createdAt <= lastSunday);
-
-    loadingData = false;
+    loading = false;
 });
 </script>
+
+{#if data.admin}
+    <button
+        class="absolute top-0 right-0 m-2 text-blue-300"
+        onclick={() => {
+            deleteCookie("token");
+            window.location.reload();
+        }}>
+        Admin Logout
+    </button>
+{/if}
 
 <div class="w-full flex justify-center mt-4">
     <a href="https://www.ikon.church">
@@ -134,53 +114,25 @@ onMount(() => {
     <p class="text-sm">Prayer and Praise Requests</p>
 </div>
 
+
 <div class="h-fit w-full p-2 sm:flex sm:justify-center">
     <div class="p-3 rounded-lg flex flex-col border border-gray-500 sm:w-[80%] min-h-40">
-        {#if loadingData}
+        {#if loading}
             <div class="w-full h-36 flex justify-center items-center text-sm italic">
                 Loading...
             </div>
         {:else}
-            {#each posts as post (post.id)}
-                <div
-                    class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-5 m-1 relative"
-                    in:fade={{ delay: 200, duration: 200 }}
-                    out:fade={{ duration: 200 }}
-                    animate:flip={{ delay: 200, duration: 200 }}
-                >
-                    <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
-                    <div
-                        class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
-                    >
-                        {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
-                    </div>
-                    <div
-                        class="w-fit absolute -bottom-[2px] -right-[3.78rem] text-xs text-gray-300">
-                        {moment(post.createdAt).format("ddd HH:mm")}
-                    </div>
-                    {#if admin}
-                        <button
-                            on:click={() => deletePost(post.id)}
-                            class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
-                            <img src="/trash.svg" alt="trash" />
-                        </button>
-                    {/if}
-                </div>
-            {:else}
-                <div class="w-full h-36 flex justify-center items-center text-sm italic">
-                    None yet...
-                </div>
-            {/each}
+            <Posts bind:posts={posts} admin={data.admin} />
 
-            {#if olderPosts.length != 0}
+            {#if oldPosts.length != 0}
                 <div class="relative h-[36px] my-1">
                     <button
                         class="h-full w-full"
-                        on:click={() => olderPostsShown = !olderPostsShown}
+                        onclick={() => oldPostsShown = !oldPostsShown}
                         out:fade={{ delay: 300, duration: 0 }}
                     >
                         <div class="p-2 absolute -top-0 -left-[0.7rem] flex items-center gap-[0.4rem] cursor-pointer text-sm w-full">
-                            {#if olderPostsShown}
+                            {#if oldPostsShown}
                                 <img src="/caret-down.svg" alt="caret-down" />
                             {:else}
                                 <img src="/caret-right.svg" alt="caret-right" />
@@ -191,32 +143,9 @@ onMount(() => {
                 </div>
             {/if}
 
-            {#if olderPostsShown}
+            {#if oldPostsShown}
                 <div class="pl-1 w-full flex flex-col" transition:slide={{ duration: 300 }}>
-                    {#each olderPosts as post (post.id)}
-                        <div
-                            class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-4 m-1 relative"
-                            transition:fade={{ duration: 300 }}
-                        >
-                            <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
-                            <div
-                                class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
-                            >
-                                {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
-                            </div>
-                            <div
-                                class="w-fit absolute -bottom-[2px] -right-[3.78rem] text-xs text-gray-300">
-                                {moment(post.createdAt).format("ddd HH:mm")}
-                            </div>
-                            {#if admin}
-                                <button
-                                    on:click={() => deletePost(post.id)}
-                                    class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
-                                    <img src="/trash.svg" alt="trash" />
-                                </button>
-                            {/if}
-                        </div>
-                    {/each}
+                    <Posts bind:posts={oldPosts} admin={data.admin} />
                 </div>
             {/if}
         {/if}
@@ -224,34 +153,27 @@ onMount(() => {
 </div>
 
 <div class="w-full p-2 lg:mx-50 mb-2 flex justify-center">
-    {#if textArea.submitting}
+    {#if currentState == States.submit}
         <div
             class="flex justify-center items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
             <div class="loader"></div>
         </div>
-    {:else if textArea.selectingType}
+    {:else if currentState == States.select}
         <div
             class="flex justify-between items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
-            <button
-                on:click={() => {
-                    textArea.is_prayer_request = true;
-                    submitForm();
+            <SelectButton
+                onclick={(e) => {
+                    isPrayerRequest = true;
+                    submitForm(e);
                 }}
-                class="pb-4 relative text-lg h-[80%] w-[50%] flex
-                    justify-center items-center border-2 border-transparent
-                    hover:border-gray-400 hover:bg-gray-500 rounded-md
-                    cursor-pointer">
-                🙏
-                <p class="absolute bottom-1 text-xs text-gray-100">
-                    Prayer request
-                </p>
-            </button>
+                emoji="🙏"
+                str="Prayer request"
+            />
             <button
                 class="w-8 h-full mx-5 rounded"
-                on:click={() => {
-                    textArea.selectingType = false;
+                onclick={() => {
+                    currentState = States.textarea;
                     setTimeout(() => {
-                        /** @type {any} */
                         const obj = document.getElementById("textarea");
                         if (obj) { autoExpand(obj); }
                     }, 50);
@@ -263,39 +185,33 @@ onMount(() => {
                     class="w-full"
                 />
             </button>
-            <button
-                on:click={() => {
-                    textArea.is_prayer_request = false;
-                    submitForm();
+            <SelectButton
+                onclick={(e) => {
+                    isPrayerRequest = true;
+                    submitForm(e);
                 }}
-                class="pb-4 relative text-lg h-[80%] w-[50%] flex
-                justify-center items-center border-2 border-transparent
-                hover:border-gray-400 hover:bg-gray-500 rounded-md
-                cursor-pointer">
-                🎉
-                <p class="absolute bottom-1 text-xs text-gray-100">
-                    Praise report
-                </p>
-            </button>
+                emoji="🎉"
+                str="Praise report"
+            />
         </div>
-        {:else if textArea.visible}
+    {:else if currentState == States.textarea}
         <form
-            on:submit|preventDefault={() => submitForm()}
+            onsubmit={preventDefault(submitForm)}
             class="relative w-full sm:w-[80%] h-fit p-2 rounded-lg border-2 border-gray-400 bg-gray-600 flex justify-between">
             <textarea
-                disabled={textArea.submitting}
-                bind:value={textArea.value}
-                on:input={textArea.autoExpandEvent}
-                on:keypress={textArea.submitIfShiftEnter}
+                {disabled}
+                bind:value={text}
+                oninput={(e) => autoExpand(e.target)}
+                onkeypress={submitOnShiftEnter}
                 rows="1"
                 placeholder=""
                 id="textarea"
                 class="bg-transparent w-full outline-none resize-none mr-[30px]"
                 use:focusOnCreate
                 maxlength="280"
-            />
+            ></textarea>
             <button class="bg-transparent p-1 absolute top-[0.25rem] right-1">
-                {#if textArea.error}
+                {#if submitErr}
                     <img
                         id="errorSvg"
                         src="/error.svg"
@@ -307,9 +223,9 @@ onMount(() => {
                 {/if}
             </button>
         </form>
-        {:else}
+    {:else}
         <button
-            on:click={() => {textArea.visible = true}}
+            onclick={() => {currentState = States.textarea}}
             class="outline-none border-2 border-transparent hover:border-gray-400 bg-gray-600 rounded-lg h-[44px] w-full sm:w-[80%] p-2 text-sm"
         > Submit Request </button>
     {/if}
@@ -319,17 +235,6 @@ onMount(() => {
 .resize-none{
     resize: none;
 }
-
-/* .stick-bottom {
-position: fixed;
-bottom: 0;
-}
-
-@media (max-height: 600px) {
-.stick-bottom {
-position: unset;
-}
-} */
 
 .loader {
     width: 24px;
@@ -428,20 +333,4 @@ position: unset;
     animation-name: pos-y-wiggle;
     animation-play-state: running;
 }
-
-/* https://codepen.io/ericrasch/pen/kWWzzk */
-/* .line-behind {
-display: table;
-white-space: nowrap;
-&:before, &:after {
-border-top: 1px solid #8c8c8c;
-content: '';
-display: table-cell;
-position: relative;
-top: 0.7em;
-width: 46%;
-}
-&:before { right: 1%; }
-&:after { left: 1%; }
-} */
 </style>

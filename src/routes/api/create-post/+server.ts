@@ -1,5 +1,5 @@
 import { createPost } from "$lib/prisma";
-import { error as errorRes, json } from "@sveltejs/kit";
+import { error as errorRes, json, type RequestHandler } from "@sveltejs/kit";
 import { Prisma } from "@prisma/client";
 import Joi from "joi";
 
@@ -8,8 +8,7 @@ const postSchema = Joi.object({
     is_prayer_request: Joi.boolean().required(),
 });
 
-/** @type {import('./$types').RequestHandler} */
-export async function POST({ request }) {
+export const POST: RequestHandler = async function({ request }) {
     const data = await request.json();
     let { error, value } = postSchema.validate({
         text: data.text.trim(),

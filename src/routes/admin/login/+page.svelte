@@ -1,19 +1,22 @@
-<script>
-import axios from '$lib/axios';
-import { setCookie } from "$lib/cookie";
+<script lang="ts">
 import { goto } from '$app/navigation';
 
-$: email = "";
-$: password = "";
-$: disabled = false;
-let error = false;
+import { preventDefault } from "$lib/utils";
+import axios from '$lib/axios';
+import { setCookie } from "$lib/cookie";
+
+import type { AxiosResponse } from 'axios';
+
+let email = $state("");
+let password = $state("");
+let disabled = $state(false);
+let error = $state(false);
 
 async function submit() {
     error = false;
     disabled = true;
 
-    /** @type {import('axios').AxiosResponse} */
-    const res = await axios
+    const res: AxiosResponse = await axios
         .post("/api/admin/token", { email, password })
         .then((res) => res)
         .catch((err) => err.response);
@@ -42,9 +45,8 @@ async function submit() {
             <hr class="mt-2">
         </div>
 
-
         <form
-            on:submit|preventDefault={() => submit()}
+            onsubmit={preventDefault(() => submit())}
             class="flex flex-col gap-4 h-[60%] w-full px-2 mb-5 text-sm">
 
             <div>
@@ -76,7 +78,6 @@ async function submit() {
                 {disabled}>
                 Submit
             </button>
-
         </form>
         <div></div>
     </div>

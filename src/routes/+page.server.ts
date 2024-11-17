@@ -1,7 +1,7 @@
 import { getPosts } from "$lib/prisma";
+import type { PageServerLoad } from "./$types";
 
-/** @type {import('./$types').PageServerLoad} */
-export const load = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals }) => {
     let posts = await getPosts();
     return { posts, admin: locals.admin };
 };

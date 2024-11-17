@@ -1,9 +1,8 @@
 import { newToken } from "$lib/jwt";
 import { verifyAdminPassword } from "$lib/prisma";
-import { error as errorRes, json } from "@sveltejs/kit";
+import { error as errorRes, json, type RequestHandler } from "@sveltejs/kit";
 
-/** @type {import('./$types').RequestHandler} */
-export async function POST({ request }) {
+export const POST: RequestHandler = async function({ request }) {
     const data = await request.json();
     if (
         data.email &&

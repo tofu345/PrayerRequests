@@ -1,15 +1,15 @@
 import { verifyToken } from "$lib/jwt";
+import type { Handle } from "@sveltejs/kit";
 
-/** @type {import('@sveltejs/kit').Handle} */
-export async function handle({ event, resolve }) {
+export const handle: Handle = async ({ event, resolve }) => {
     const token = event.cookies.get("token");
     if (token) {
         const email = verifyToken(token);
         if (email) {
-            event.locals.admin = email;
+            event.locals.admin = { emailAddr: email };
         }
     }
 
     const response = await resolve(event);
     return response;
-}
+};

@@ -1,5 +1,7 @@
-<script>
+<script lang="ts">
 import "../app.css";
+
+let { children } = $props();
 </script>
 
 <svelte:head>
@@ -7,7 +9,7 @@ import "../app.css";
     <link rel="icon" type="image/x-icon" href="/favicon.png">
 </svelte:head>
 
-<slot />
+{@render children()}
 
 <style>
 /* this will apply to <body> */
