@@ -32,7 +32,7 @@ const States = {
 let currentState = $state(States.button);
 let disabled = $derived(currentState == States.submit);
 let isPrayerRequest: boolean | null = null;
-let submitErr = $state(false); // maybe event to trigger the animation? or js animation?
+let submitErr = $state(false); // TODO? maybe event to trigger the animation? or js animation?
 let text = $state("");
 
 async function submitOnShiftEnter(e: KeyboardEvent) {
@@ -41,7 +41,7 @@ async function submitOnShiftEnter(e: KeyboardEvent) {
     }
 }
 
-// wait for animation
+// wait for error animation
 function animationDelay() {
     submitErr = true;
     setTimeout(() => {
@@ -158,6 +158,7 @@ onMount(() => {
             class="flex justify-center items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
             <div class="loader"></div>
         </div>
+
     {:else if currentState == States.select}
         <div
             class="flex justify-between items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
@@ -187,13 +188,14 @@ onMount(() => {
             </button>
             <SelectButton
                 onclick={(e) => {
-                    isPrayerRequest = true;
+                    isPrayerRequest = false;
                     submitForm(e);
                 }}
                 emoji="🎉"
                 str="Praise report"
             />
         </div>
+
     {:else if currentState == States.textarea}
         <form
             onsubmit={preventDefault(submitForm)}
@@ -223,6 +225,7 @@ onMount(() => {
                 {/if}
             </button>
         </form>
+
     {:else}
         <button
             onclick={() => {currentState = States.textarea}}
