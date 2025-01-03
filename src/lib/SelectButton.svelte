@@ -12,7 +12,7 @@ let { onclick, emoji, str }: Props = $props();
 
 <button
     {onclick}
-    class="pb-4 relative text-lg h-[80%] w-[50%] flex justify-center
+    class="pb-5 relative text-lg h-[80%] w-[50%] flex justify-center
         items-center border-2 border-transparent hover:border-gray-400
         hover:bg-gray-500 rounded-md cursor-pointer"
     >

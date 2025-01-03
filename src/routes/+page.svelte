@@ -14,14 +14,28 @@ import type { AxiosResponse } from 'axios';
 let { data }: { data: PageData }  = $props();
 let loading = $state(true);
 
-let today = new Date();
-let dayOfWeek = today.getDay();
-let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek)
-let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
+type PostType = PageData["posts"];
 
-let posts = $state(data.posts.filter(v => v.createdAt > lastSunday));
-let oldPosts = $state(data.posts.filter(v => v.createdAt <= lastSunday));
+let posts: PostType = $state([]);
+let oldPosts: PostType = $state([]);
 let oldPostsShown = $state(false);
+
+function parseDate(date: string | Date): Date {
+    if (typeof date === 'string') {
+        return new Date(date);
+    }
+    return date;
+}
+
+function filterPosts(postList: PostType): void {
+    let today = new Date();
+    let dayOfWeek = today.getDay();
+    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek)
+    let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
+
+    posts = postList.filter(v => parseDate(v.createdAt) > lastSunday);
+    oldPosts = postList.filter(v => parseDate(v.createdAt) <= lastSunday);
+}
 
 const States = {
     button: 0,
@@ -89,8 +103,26 @@ function focusOnCreate(el: HTMLTextAreaElement) {
     el.focus();
 }
 
-onMount(() => {
+let runInterval = true;
+
+onMount(async () => {
     loading = false;
+    filterPosts(data.posts);
+
+    window.addEventListener("blur", () => runInterval = false);
+    window.addEventListener("focus", () => runInterval = true);
+    setInterval(async function(){
+        if (!runInterval) return;
+
+        const res: AxiosResponse = await axios
+            .get("/api/get-posts")
+            .then((res) => res)
+            .catch((err) => err.response);
+
+        if (res.status === 200) {
+            filterPosts(res.data);
+        }
+    }, 60000); // every minute
 });
 </script>
 
@@ -114,9 +146,8 @@ onMount(() => {
     <p class="text-sm">Prayer and Praise Requests</p>
 </div>
 
-
 <div class="h-fit w-full p-2 sm:flex sm:justify-center">
-    <div class="p-3 rounded-lg flex flex-col border border-gray-500 sm:w-[80%] min-h-40">
+    <div class="p-1 py-3 rounded-lg border border-gray-500 sm:w-[80%] min-h-40 relative">
         {#if loading}
             <div class="w-full h-36 flex justify-center items-center text-sm italic">
                 Loading...
@@ -125,7 +156,7 @@ onMount(() => {
             <Posts bind:posts={posts} admin={data.admin} />
 
             {#if oldPosts.length != 0}
-                <div class="relative h-[36px] my-1">
+                <div class="relative h-[36px] my-1 ml-2">
                     <button
                         class="h-full w-full"
                         onclick={() => oldPostsShown = !oldPostsShown}
@@ -143,8 +174,8 @@ onMount(() => {
                 </div>
             {/if}
 
-            {#if oldPostsShown}
-                <div class="pl-1 w-full flex flex-col" transition:slide={{ duration: 300 }}>
+            {#if oldPostsShown && oldPosts.length != 0}
+                <div transition:slide={{ duration: 300 }}>
                     <Posts bind:posts={oldPosts} admin={data.admin} />
                 </div>
             {/if}
@@ -168,7 +199,7 @@ onMount(() => {
                     submitForm(e);
                 }}
                 emoji="🙏"
-                str="Prayer request"
+                str="Prayer Request"
             />
             <button
                 class="w-8 h-full mx-5 rounded"
@@ -192,7 +223,7 @@ onMount(() => {
                     submitForm(e);
                 }}
                 emoji="🎉"
-                str="Praise report"
+                str="Praise Report"
             />
         </div>
 

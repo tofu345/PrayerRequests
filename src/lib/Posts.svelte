@@ -25,33 +25,41 @@ async function deletePost(id: number) {
 }
 </script>
 
-{#each posts as post (post.id)}
-    <div
-        class="sm:max-w-[89%] max-w-[78%] bg-gray-600 rounded w-fit ml-5 m-1 relative"
-        in:fade={{ delay: 200, duration: 200 }}
-        out:fade={{ duration: 200 }}
-        animate:flip={{ delay: 200, duration: 200 }}
-    >
-        <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2"> {post.text} </p>
+<div class="flex flex-col gap-2">
+    {#each posts as post (post.id)}
         <div
-            class="absolute text-sm top-[0.1rem] -left-[1.65rem] h-fit w-fit p-1 rounded-md"
+            class="w-full flex"
+            in:fade={{ delay: 200, duration: 200 }}
+            out:fade={{ duration: 200 }}
+            animate:flip={{ delay: 200, duration: 200 }}
         >
-            {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if}
+            <div class="text-sm m-1 mr-2 self-center"> {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if} </div>
+            <div class="bg-gray-600 rounded h-fit my-auto">
+                <p
+                    style="overflow-wrap: break-word;"
+                    class="whitespace-pre-wrap p-1 px-2">
+                    {post.text}
+                </p>
+            </div>
+            <div class="mx-2 flex flex-col w-fit">
+                <div class="h-full">
+                    {#if admin}
+                        <button
+                            onclick={() => deletePost(post.id)}
+                            class="bg-red-400 rounded border border-transparent">
+                            <img src="/trash.svg" alt="trash" />
+                        </button>
+                    {/if}
+                </div>
+                <p
+                    class="text-xs text-gray-300 w-fit whitespace-nowrap">
+                    {moment(post.createdAt).format("ddd Do MMM")}
+                </p>
+            </div>
         </div>
-        <div
-            class="w-fit absolute -bottom-[2px] -right-[3.78rem] text-xs text-gray-300">
-            {moment(post.createdAt).format("ddd HH:mm")}
+    {:else}
+        <div class="w-full h-36 flex justify-center items-center text-sm italic">
+            None yet...
         </div>
-        {#if admin}
-            <button
-                onclick={() => deletePost(post.id)}
-                class="absolute bottom-[0.97rem] -right-[1.6rem] h-4 bg-red-400 rounded border border-transparent">
-                <img src="/trash.svg" alt="trash" />
-            </button>
-        {/if}
-    </div>
-{:else}
-    <div class="w-full h-36 flex justify-center items-center text-sm italic">
-        None yet...
-    </div>
-{/each}
+    {/each}
+</div>
