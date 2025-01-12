@@ -132,7 +132,6 @@ let runInterval = true;
 onMount(async () => {
     loading = false;
     filterPosts(data.posts);
-    newNotification("test", NotifType.error);
 
     window.addEventListener("blur", () => runInterval = false);
     window.addEventListener("focus", () => runInterval = true);
