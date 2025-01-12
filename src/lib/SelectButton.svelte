@@ -10,6 +10,7 @@ type Props = {
 let { onclick, emoji, str }: Props = $props();
 </script>
 
+<!-- probably not necessary, this component -->
 <button
     {onclick}
     class="pb-5 relative text-lg h-[80%] w-[50%] flex justify-center

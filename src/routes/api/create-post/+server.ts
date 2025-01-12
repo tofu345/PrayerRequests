@@ -18,7 +18,6 @@ export const POST: RequestHandler = async function ({ request }) {
         postType: data.postType,
     });
     if (error !== undefined) {
-        console.log(error);
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 

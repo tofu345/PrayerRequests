@@ -49,6 +49,19 @@ export async function createPost(
     });
 }
 
+// TODO
+export async function editPost(
+    id: number,
+    text: string,
+    postType: Prisma.PostType,
+): Promise<Prisma.Post> {
+    clearCache();
+    return prisma.post.update({
+        where: { id },
+        data: { text, postType },
+    });
+}
+
 export async function deletePost(id: number) {
     clearCache();
     return prisma.post.deleteMany({ where: { id } });

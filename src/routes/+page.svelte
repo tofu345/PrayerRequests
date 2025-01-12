@@ -2,6 +2,7 @@
 import axios from '$lib/axios';
 import { onMount } from 'svelte';
 import { slide, fade } from 'svelte/transition';
+import { flip } from 'svelte/animate';
 
 import Posts from '$lib/Posts.svelte';
 import SelectButton from '$lib/SelectButton.svelte';
@@ -10,7 +11,7 @@ import { deleteCookie } from '$lib/cookie';
 import type { PageData } from './$types';
 import type { AxiosResponse } from 'axios';
 import type Prisma from '@prisma/client';
-    import { postTypeEmoji } from '$lib/utils';
+import { postTypeEmoji } from '$lib/utils';
 
 let { data }: { data: PageData }  = $props();
 let loading = $state(true);
@@ -71,7 +72,7 @@ async function submitForm(_event: Event) {
 
     if (postType === null) {
         console.error("invalid post type");
-        return; // TODO: display error
+        return;
     }
 
     currentState = States.submit;
@@ -88,6 +89,7 @@ async function submitForm(_event: Event) {
 
     if (res.status === 400) {
         currentState = States.textarea;
+        newNotification(res.data, NotifType.error);
         return errorAnimation();
     }
 
@@ -96,6 +98,7 @@ async function submitForm(_event: Event) {
     currentState = States.button;
 }
 
+// autoExpand textarea
 function autoExpand (obj: any) {
     obj.style.height = Math.min(obj.scrollHeight, 150) + "px";
 }
@@ -104,11 +107,32 @@ function focusOnCreate(el: HTMLTextAreaElement) {
     el.focus();
 }
 
+const NotifType = {
+    warning: 0,
+    error: 1,
+    info: 2
+}
+let notifications: {id: number, type: number, msg: string}[] = $state([]);
+
+function newNotification(msg: string, type: number) {
+    if (typeof msg == 'object') msg = JSON.stringify(msg);
+    let id = Math.max(...notifications.map(v => v.id)) + 1;
+    if (notifications.length === 0) {
+        id = 0;
+    }
+    notifications.push({ id, type, msg });
+}
+
+function delNotifById(id: number) {
+    notifications = notifications.filter(v => v.id !== id);
+}
+
 let runInterval = true;
 
 onMount(async () => {
     loading = false;
     filterPosts(data.posts);
+    newNotification("test", NotifType.error);
 
     window.addEventListener("blur", () => runInterval = false);
     window.addEventListener("focus", () => runInterval = true);
@@ -123,9 +147,28 @@ onMount(async () => {
         if (res.status === 200) {
             filterPosts(res.data);
         }
-    }, 60000); // every minute
+    }, 30000); // every 30s
 });
 </script>
+
+<!-- good enough for now i guess -->
+<div id="notif-wrapper" class="flex flex-col gap-3 fixed top-0 right-0 p-3 z-50">
+    {#each notifications as notif (notif.id)}
+        <div
+            in:fade={{ delay: 200, duration: 200 }}
+            out:fade={{ duration: 200 }}
+            class="h-full w-[15rem] p-3 pr-2 flex gap-4 justify-between items-center rounded-lg"
+            class:bg-green-800={notif.type == NotifType.info}
+            class:bg-yellow-800={notif.type == NotifType.warning}
+            class:bg-red-800={notif.type == NotifType.error}
+        >
+            <p class="w-[90%] whitespace-pre-wrap text-sm"> {notif.msg} </p>
+            <button class="h-[100%] flex justify-center items-center" onclick={() => delNotifById(notif.id)}>
+                <img src="/close.svg" alt="close" />
+            </button>
+        </div>
+    {/each}
+</div>
 
 {#if data.admin}
     <button
@@ -203,10 +246,7 @@ onMount(async () => {
                 class="w-8 h-full mx-5 rounded"
                 onclick={() => {
                     currentState = States.textarea;
-                    setTimeout(() => {
-                        const obj = document.getElementById("textarea");
-                        if (obj) { autoExpand(obj); }
-                    }, 50);
+                    setTimeout(() => autoExpand(document.getElementById("textarea")), 50);
                 }}>
                 <img
                     id="errorSvg"
@@ -238,7 +278,10 @@ onMount(async () => {
                 maxlength="280"
             ></textarea>
             <button
-                onclick={() => currentState = States.select}
+                onclick={() => {
+                    if (text === "") { return errorAnimation();}
+                    currentState = States.select;
+                }}
                 class="bg-transparent p-1 absolute top-[0.25rem] right-1">
                 {#if submitErr}
                     <img
