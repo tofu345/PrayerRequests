@@ -5,11 +5,12 @@ import { slide, fade } from 'svelte/transition';
 
 import Posts from '$lib/Posts.svelte';
 import SelectButton from '$lib/SelectButton.svelte';
-import { preventDefault } from '$lib/utils';
 import { deleteCookie } from '$lib/cookie';
 
 import type { PageData } from './$types';
 import type { AxiosResponse } from 'axios';
+import type Prisma from '@prisma/client';
+    import { postTypeEmoji } from '$lib/utils';
 
 let { data }: { data: PageData }  = $props();
 let loading = $state(true);
@@ -45,18 +46,18 @@ const States = {
 };
 let currentState = $state(States.button);
 let disabled = $derived(currentState == States.submit);
-let isPrayerRequest: boolean | null = null;
-let submitErr = $state(false); // TODO? maybe event to trigger the animation? or js animation?
+let postType: Prisma.PostType | null = null;
+let submitErr = $state(false);
 let text = $state("");
 
 async function submitOnShiftEnter(e: KeyboardEvent) {
     if (e.key == "Enter" && e.shiftKey) {
-        await submitForm(e);
+        currentState = States.select;
     }
 }
 
-// wait for error animation
-function animationDelay() {
+// css animation
+function errorAnimation() {
     submitErr = true;
     setTimeout(() => {
         submitErr = false;
@@ -65,12 +66,12 @@ function animationDelay() {
 
 async function submitForm(_event: Event) {
     if (text === "") {
-        return animationDelay();
+        return errorAnimation();
     }
 
-    if (isPrayerRequest === null) {
-        currentState = States.select;
-        return;
+    if (postType === null) {
+        console.error("invalid post type");
+        return; // TODO: display error
     }
 
     currentState = States.submit;
@@ -78,16 +79,16 @@ async function submitForm(_event: Event) {
 
     const res: AxiosResponse = await axios
         .post("/api/create-post", {
-            text,
-            is_prayer_request: isPrayerRequest
+            text: text.trim(),
+            postType: postType
         })
         .then((res) => res)
         .catch((err) => err.response);
-    isPrayerRequest = null;
+    postType = null;
 
     if (res.status === 400) {
         currentState = States.textarea;
-        return animationDelay();
+        return errorAnimation();
     }
 
     posts.splice(0, 0, res.data); // insert at beginning
@@ -194,11 +195,8 @@ onMount(async () => {
         <div
             class="flex justify-between items-center bg-gray-600 rounded-lg h-[60px] w-full sm:w-[80%] px-1 text-sm">
             <SelectButton
-                onclick={(e) => {
-                    isPrayerRequest = true;
-                    submitForm(e);
-                }}
-                emoji="🙏"
+                onclick={(e) => { postType = "PrayerRequest"; submitForm(e); }}
+                emoji={postTypeEmoji("PrayerRequest")}
                 str="Prayer Request"
             />
             <button
@@ -218,18 +216,14 @@ onMount(async () => {
                 />
             </button>
             <SelectButton
-                onclick={(e) => {
-                    isPrayerRequest = false;
-                    submitForm(e);
-                }}
-                emoji="🎉"
+                onclick={(e) => { postType = "PraiseReport"; submitForm(e); }}
+                emoji={postTypeEmoji("PraiseReport")}
                 str="Praise Report"
             />
         </div>
 
     {:else if currentState == States.textarea}
         <form
-            onsubmit={preventDefault(submitForm)}
             class="relative w-full sm:w-[80%] h-fit p-2 rounded-lg border-2 border-gray-400 bg-gray-600 flex justify-between">
             <textarea
                 {disabled}
@@ -243,7 +237,9 @@ onMount(async () => {
                 use:focusOnCreate
                 maxlength="280"
             ></textarea>
-            <button class="bg-transparent p-1 absolute top-[0.25rem] right-1">
+            <button
+                onclick={() => currentState = States.select}
+                class="bg-transparent p-1 absolute top-[0.25rem] right-1">
                 {#if submitErr}
                     <img
                         id="errorSvg"

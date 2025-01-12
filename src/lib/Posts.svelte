@@ -4,6 +4,8 @@ import { flip } from 'svelte/animate';
 import moment from 'moment';
 import axios from '$lib/axios';
 
+import { postTypeEmoji } from '$lib/utils';
+
 import type Prisma from "@prisma/client";
 import type { Admin } from "$lib/types";
 import type { AxiosResponse } from 'axios';
@@ -23,6 +25,7 @@ async function deletePost(id: number) {
         posts = posts.filter(v => v.id != id);
     }
 }
+
 </script>
 
 <div class="flex flex-col gap-2">
@@ -33,7 +36,7 @@ async function deletePost(id: number) {
             out:fade={{ duration: 200 }}
             animate:flip={{ delay: 200, duration: 200 }}
         >
-            <div class="text-sm m-1 mr-2 self-center"> {#if post.is_prayer_request} 🙏 {:else} 🎉 {/if} </div>
+            <div class="text-sm m-1 mr-2 self-center"> {postTypeEmoji(post.postType)} </div>
             <div class="bg-gray-600 rounded h-fit my-auto">
                 <p
                     style="overflow-wrap: break-word;"

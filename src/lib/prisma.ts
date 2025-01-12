@@ -3,9 +3,8 @@ import { ADMIN_EMAIL, ADMIN_PASSWORD } from "$env/static/private";
 import { PrismaClient } from "@prisma/client";
 import type Prisma from "@prisma/client";
 
-const saltRounds = 10;
 const prisma = new PrismaClient();
-let cache: Prisma.Post[] | null = null;
+export let cache: Prisma.Post[] | null = null;
 
 export function clearCache() {
     cache = null;
@@ -39,13 +38,13 @@ export async function getPosts() {
 
 export async function createPost(
     text: string,
-    is_prayer_request: boolean,
+    postType: Prisma.PostType,
 ): Promise<Prisma.Post> {
     clearCache();
     return prisma.post.create({
         data: {
             text: text,
-            is_prayer_request: is_prayer_request,
+            postType: postType,
         },
     });
 }
@@ -70,7 +69,11 @@ export async function getAdmin(email: string): Promise<Prisma.Admin | null> {
     return prisma.admin.findFirst({ where: { email } });
 }
 
-async function createAdmin(email: string, password: string): Promise<Prisma.Admin> {
+async function createAdmin(
+    email: string,
+    password: string,
+): Promise<Prisma.Admin> {
+    const saltRounds = 10;
     const hash = await bcrypt.hash(password, saltRounds);
     const admin = await prisma.admin.create({
         data: { email, password: hash },

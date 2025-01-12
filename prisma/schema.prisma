@@ -16,9 +16,14 @@ model Admin {
     password String
 }
 
+enum PostType {
+    PrayerRequest
+    PraiseReport
+}
+
 model Post {
     id                  Int      @id @default(autoincrement())
     text                String
-    is_prayer_request   Boolean
+    postType            PostType
     createdAt           DateTime @default(now())
 }
