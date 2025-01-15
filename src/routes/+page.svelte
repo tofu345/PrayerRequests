@@ -62,6 +62,7 @@ function editable(postId: number): boolean {
     return false;
 }
 
+// undefined for admin
 let editing: {editId: string | undefined, postId: number, idx: number} | null = null;
 
 async function startEditPost(postId: number) {
@@ -86,8 +87,7 @@ async function completeEditPost() {
         .post("/api/edit-post", {
             id: editing!.editId,
             postId: editing!.postId,
-            text: text,
-            postType: postType,
+            text, postType,
         })
         .then(res => res)
         .catch(err => err.response);
@@ -218,7 +218,7 @@ onMount(async () => {
         if (res.status === 200) {
             filterPosts(res.data);
         }
-    }, 30000); // every 30s
+    }, 60000); // every min
 });
 </script>
 
