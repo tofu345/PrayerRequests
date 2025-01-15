@@ -27,11 +27,7 @@ export const POST: RequestHandler = async function ({ request, locals }) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 
-    if (!data.id && !locals.admin) {
-        return errorRes(401, "unauthorized");
-    }
-
-    if (locals.admin || editableExists(value.id)) {
+    if (locals.admin || data.id || editableExists(data.id)) {
         let post = null;
         try {
             post = await editPost(value.postId, value.text, value.postType);
