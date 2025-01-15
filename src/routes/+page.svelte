@@ -3,8 +3,8 @@ import axios from '$lib/axios';
 import { onMount } from 'svelte';
 import { slide, fade } from 'svelte/transition';
 import { flip } from 'svelte/animate';
+import moment from 'moment';
 
-import Posts from '$lib/Posts.svelte';
 import SelectButton from '$lib/SelectButton.svelte';
 import { deleteCookie } from '$lib/cookie';
 
@@ -39,6 +39,72 @@ function filterPosts(postList: PostType): void {
     oldPosts = postList.filter(v => parseDate(v.createdAt) <= lastSunday);
 }
 
+async function deletePost(id: number) {
+    if (!window.confirm("Are you sure?")) {
+        return;
+    }
+
+    const res: AxiosResponse = await axios
+        .post("/api/delete-post", { id })
+        .then((res) => res)
+        .catch((err) => err.response);
+    if (res.status !== 200) {
+        posts = posts.filter(v => v.id != id);
+    }
+}
+
+let userEditables: {id: string, postId: number}[] = [];
+
+function editable(postId: number): boolean {
+    for (const el of userEditables) {
+        if (el.postId === postId) return true;
+    }
+    return false;
+}
+
+let editing: {editId: string | undefined, postId: number, idx: number} | null = null;
+
+async function startEditPost(postId: number) {
+    if (editing !== null) {
+        return newNotification("Already editing", NotifType.warning);
+    }
+    if (text !== "") {
+        return newNotification("Unsubmitted request", NotifType.warning);
+    }
+
+    let idx = posts.findIndex(el => el.id == postId);
+    let post = posts[idx];
+    editing = { postId, idx, editId: userEditables.find(el => el.postId == postId)?.id };
+
+    text = post.text;
+    currentState = States.textarea;
+    postType = null;
+}
+
+async function completeEditPost() {
+    const res: AxiosResponse = await axios
+        .post("/api/edit-post", {
+            id: editing!.editId,
+            postId: editing!.postId,
+            text: text,
+            postType: postType,
+        })
+        .then(res => res)
+        .catch(err => err.response);
+
+    if (res.status !== 200) {
+        currentState = States.textarea;
+        newNotification(res.data, NotifType.error);
+        return;
+    }
+
+    posts[editing!.idx] = res.data.post;
+    editing = null;
+    text = "";
+    postType = null;
+    currentState = States.button;
+}
+
 const States = {
     button: 0,
     textarea: 1,
@@ -66,6 +132,10 @@ function errorAnimation() {
 }
 
 async function submitForm(_event: Event) {
+    if (editing !== null) {
+        return completeEditPost();
+    }
+
     if (text === "") {
         return errorAnimation();
     }
@@ -93,7 +163,9 @@ async function submitForm(_event: Event) {
         return errorAnimation();
     }
 
-    posts.splice(0, 0, res.data); // insert at beginning
+    let post = res.data.post;
+    userEditables.push({id: res.data.editId, postId: post.id});
+    posts.splice(0, 0, post); // insert at beginning
     text = "";
     currentState = States.button;
 }
@@ -156,6 +228,7 @@ onMount(async () => {
         <div
             in:fade={{ delay: 200, duration: 200 }}
             out:fade={{ duration: 200 }}
+            animate:flip={{ delay: 200, duration: 200 }}
             class="h-full w-[15rem] p-3 pr-2 flex gap-4 justify-between items-center rounded-lg"
             class:bg-green-800={notif.type == NotifType.info}
             class:bg-yellow-800={notif.type == NotifType.warning}
@@ -196,7 +269,52 @@ onMount(async () => {
                 Loading...
             </div>
         {:else}
-            <Posts bind:posts={posts} admin={data.admin} />
+            <div class="flex flex-col gap-2">
+                <!-- PostList -->
+                {#each posts as post (post.id)}
+                    <div
+                        class="w-full flex"
+                        in:fade={{ delay: 200, duration: 200 }}
+                        out:fade={{ duration: 200 }}
+                        animate:flip={{ delay: 200, duration: 200 }}
+                    >
+                        <div class="text-sm m-1 mr-2 self-center"> {postTypeEmoji(post.postType)} </div>
+                        <div class="bg-gray-600 rounded h-fit my-auto">
+                            <p style="overflow-wrap: break-word;" class="whitespace-pre-wrap p-1 px-2">
+                                {post.text}
+                            </p>
+                        </div>
+                        <div class="mx-2 flex flex-col w-fit gap-1">
+                            <div class="h-full">
+                                <div class="flex gap-2">
+                                    {#if data.admin}
+                                        <button
+                                            onclick={() => deletePost(post.id)}
+                                            class="bg-red-400 rounded border border-transparent">
+                                            <img src="/trash.svg" alt="trash" />
+                                        </button>
+                                    {/if}
+                                    {#if data.admin || editable(post.id)}
+                                        <button
+                                            onclick={() => startEditPost(post.id)}
+                                            class="bg-blue-400 p-1 flex justify-center items-center rounded border border-transparent">
+                                            <img width="10" src="/edit.svg" alt="edit" />
+                                        </button>
+                                    {/if}
+                                </div>
+                            </div>
+                            <p
+                                class="text-xs text-gray-300 w-fit whitespace-nowrap">
+                                {moment(post.createdAt).format("ddd Do MMM")}
+                            </p>
+                        </div>
+                    </div>
+                {:else}
+                    <div class="w-full h-36 flex justify-center items-center text-sm italic">
+                        None yet...
+                    </div>
+                {/each}
+            </div>
 
             {#if oldPosts.length != 0}
                 <div class="relative h-[36px] my-1 ml-2">
@@ -219,7 +337,45 @@ onMount(async () => {
 
             {#if oldPostsShown && oldPosts.length != 0}
                 <div transition:slide={{ duration: 300 }}>
-                    <Posts bind:posts={oldPosts} admin={data.admin} />
+                    <div class="flex flex-col gap-2">
+                        <!-- OldPostList -->
+                        {#each posts as post (post.id)}
+                            <div
+                                class="w-full flex"
+                                in:fade={{ delay: 200, duration: 200 }}
+                                out:fade={{ duration: 200 }}
+                                animate:flip={{ delay: 200, duration: 200 }}
+                            >
+                                <div class="text-sm m-1 mr-2 self-center"> {postTypeEmoji(post.postType)} </div>
+                                <div class="bg-gray-600 rounded h-fit my-auto">
+                                    <p
+                                        style="overflow-wrap: break-word;"
+                                        class="whitespace-pre-wrap p-1 px-2">
+                                        {post.text}
+                                    </p>
+                                </div>
+                                <div class="mx-2 flex flex-col w-fit">
+                                    <div class="h-full">
+                                        {#if data.admin}
+                                            <button
+                                                onclick={() => deletePost(post.id)}
+                                                class="bg-red-400 rounded border border-transparent">
+                                                <img src="/trash.svg" alt="trash" />
+                                            </button>
+                                        {/if}
+                                    </div>
+                                    <p class="text-xs text-gray-300 w-fit whitespace-nowrap">
+                                        {moment(post.createdAt).format("ddd Do MMM")}
+                                    </p>
+                                </div>
+                            </div>
+                        {:else}
+                            <div class="w-full h-36 flex justify-center items-center text-sm italic">
+                                None yet...
+                            </div>
+                        {/each}
+                    </div>
+
                 </div>
             {/if}
         {/if}
@@ -262,7 +418,7 @@ onMount(async () => {
         </div>
 
     {:else if currentState == States.textarea}
-        <form
+        <div
             class="relative w-full sm:w-[80%] h-fit p-2 rounded-lg border-2 border-gray-400 bg-gray-600 flex justify-between">
             <textarea
                 {disabled}
@@ -293,7 +449,7 @@ onMount(async () => {
                     <img src="/send.svg" alt="send img"/>
                 {/if}
             </button>
-        </form>
+        </div>
 
     {:else}
         <button

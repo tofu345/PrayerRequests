@@ -1,5 +1,6 @@
 import { createPost } from "$lib/prisma";
 import { error as errorRes, json, type RequestHandler } from "@sveltejs/kit";
+import { newEditable } from "$lib/editable";
 import { Prisma as PrismaObj } from "@prisma/client";
 import Prisma from "@prisma/client";
 import Joi from "joi";
@@ -21,9 +22,9 @@ export const POST: RequestHandler = async function ({ request }) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 
-    let obj = null;
+    let post = null;
     try {
-        obj = await createPost(value.text, value.postType);
+        post = await createPost(value.text, value.postType);
     } catch (e) {
         if (e instanceof PrismaObj.PrismaClientKnownRequestError) {
             return errorRes(400, e);
@@ -31,5 +32,5 @@ export const POST: RequestHandler = async function ({ request }) {
         throw e;
     }
 
-    return json(obj);
+    return json({ post, editId: newEditable(post.id) });
 };
