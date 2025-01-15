@@ -339,7 +339,7 @@ onMount(async () => {
                 <div transition:slide={{ duration: 300 }}>
                     <div class="flex flex-col gap-2">
                         <!-- OldPostList -->
-                        {#each posts as post (post.id)}
+                        {#each oldPosts as post (post.id)}
                             <div
                                 class="w-full flex"
                                 in:fade={{ delay: 200, duration: 200 }}
