@@ -48,7 +48,7 @@ async function deletePost(id: number) {
         .post("/api/delete-post", { id })
         .then((res) => res)
         .catch((err) => err.response);
-    if (res.status !== 200) {
+    if (res.status === 200) {
         posts = posts.filter(v => v.id != id);
     }
 }
