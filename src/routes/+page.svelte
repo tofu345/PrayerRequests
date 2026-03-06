@@ -2,7 +2,7 @@
 import axios from '$lib/axios';
 import moment from 'moment';
 import { flip } from 'svelte/animate';
-import { fly, slide, fade } from 'svelte/transition';
+import { slide, fade } from 'svelte/transition';
 import { onMount } from 'svelte';
 
 import PostAction from '$lib/PostAction.svelte';
@@ -476,7 +476,7 @@ onMount(async () => {
                             id="errorSvg"
                             src="/error.svg"
                             alt="error img"
-                            class="boop pos-y-wiggle"
+                            class="boop pos-x-wiggle"
                         />
                     {:else}
                         <img src="/send.svg" alt="send img"/>
@@ -528,7 +528,7 @@ onMount(async () => {
 }
 }
 
-@keyframes pos-y-wiggle {
+@keyframes pos-x-wiggle {
 0% {
     transform: translateX(0px);
     -o-transform: translateX(0px);
@@ -593,7 +593,7 @@ onMount(async () => {
     animation-play-state: paused;
     animation-fill-mode: forwards;
 }
-.boop.pos-y-wiggle {
+.boop.pos-x-wiggle {
     animation-name: pos-y-wiggle;
     animation-play-state: running;
 }
