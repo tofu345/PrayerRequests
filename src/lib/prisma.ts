@@ -52,7 +52,6 @@ export async function createPost(
     });
 }
 
-// TODO, for what?
 export async function editPost(
     id: number,
     text: string,
@@ -98,11 +97,10 @@ async function createAdmin(
 }
 
 async function main() {
-    // Running this every time is unnecessary
-    // let admins = await prisma.admin.count();
-    // if (admins === 0 && ADMIN_EMAIL && ADMIN_PASSWORD) {
-    //     createAdmin(ADMIN_EMAIL, ADMIN_PASSWORD);
-    // }
+    let admins = await prisma.admin.count();
+    if (admins === 0 && ADMIN_EMAIL && ADMIN_PASSWORD) {
+        createAdmin(ADMIN_EMAIL, ADMIN_PASSWORD);
+    }
 }
 
 main()

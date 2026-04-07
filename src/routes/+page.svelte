@@ -16,43 +16,43 @@ import type Prisma from '@prisma/client';
 import { maxTextLength } from '$lib/constants';
 
 type Posts = Prisma.Post[];
+
 let { data }: { data: PageData } = $props();
 
-// typescript sucks
-const admin : boolean = data.admin !== null && data.admin !== "";
+const isAdmin: boolean = data.admin !== null && data.admin !== "";
 
-let loading = $state(true);
-
-let postList: Posts = [];         // all posts
-let posts: Posts = $state([]);    // created this past week
-let oldPosts: Posts = $state([]); // older posts
-
+let postList: Posts = [];         // all
+let posts: Posts = $state([]);    // created this week
+let oldPosts: Posts = $state([]); // previous week and older
 let oldPostsShown = $state(true);
 
-async function getPosts() {
+function parseDate(date: string | Date): Date {
+    if (typeof date === 'string') return new Date(date);
+    return date; // surely it can't be anything else?
+}
+
+// Using the new post list, [list], seperate all posts made since the last
+// sunday (posts) from those before (oldPosts).
+function setPostList(list: Posts): void {
+    let today = new Date();
+    let dayOfWeek = today.getDay(); // 0 on sundays.
+    // day of the month of the last sunday.
+    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek);
+    let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
+
+    postList = list;
+    posts = list.filter(v => parseDate(v.createdAt) > lastSunday);
+    oldPosts = list.filter(v => parseDate(v.createdAt) <= lastSunday);
+}
+
+async function fetchPosts() {
     const res: AxiosResponse = await axios
         .get("/api/get-posts")
         .then((res) => res)
         .catch((err) => err.response);
     if (res?.status === 200) {
-        setPostListTo(res.data);
+        setPostList(res.data);
     }
-}
-
-function parseDate(date: string | Date): Date {
-    if (typeof date === 'string') return new Date(date);
-    return date;
-}
-
-function setPostListTo(updPosts: Posts): void {
-    let today = new Date();
-    let dayOfWeek = today.getDay();
-    let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek)
-    let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
-
-    postList = updPosts;
-    posts = updPosts.filter(v => parseDate(v.createdAt) > lastSunday);
-    oldPosts = updPosts.filter(v => parseDate(v.createdAt) <= lastSunday);
 }
 
 let currentEdit: {
@@ -66,11 +66,16 @@ async function startEdit(postId: number) {
         return newNotification("Already editing", NotifType.warning, 2000);
     }
     if (text.trim() !== "") {
-        return newNotification("Unsubmitted request\nDelete text to continue", NotifType.warning);
+        return newNotification("You have unsaved changes.\nDelete to continue", NotifType.warning);
     }
 
-    let editId, postIndex = postList.findIndex(el => el.id == postId);
-    if (!admin) {
+    let postIndex = postList.findIndex(el => el.id == postId);
+    if (postIndex == -1) {
+        return newNotification("Cannot edit this post", NotifType.warning);
+    }
+
+    let editId;
+    if (!isAdmin) {
         editId = editables.find(el => el.postId == postId)?.editId;
     }
     currentEdit = { editId, postId, postIndex };
@@ -98,6 +103,7 @@ async function submitEdit() {
     }
 
     postList[currentEdit!.postIndex] = res.data.post;
+    setPostList(postList); // a bit lazy
     abortEdit();
 }
 
@@ -119,7 +125,7 @@ async function deletePost(id: number) {
         .catch((err) => err.response);
     if (res.status === 200) {
         postList = postList.filter(v => v.id != id);
-        setPostListTo(postList);
+        setPostList(postList); // a bit lazy
     }
 }
 
@@ -237,28 +243,29 @@ const interval = new Date().getDay() === 0 ? 10000 : 60000; // short on sundays
 let lastPoll = new Date();
 
 const pollingFunction = async function () {
-    const res1: AxiosResponse = await axios
+    const res: AxiosResponse = await axios
         .get("/api/poll")
         .catch((err) => err.response);
 
-    if (res1.status !== 200) {
-        console.error(res1);
+    if (res.status !== 200) {
+        console.error(res);
         return;
     }
 
-    let lastChange = parseDate(res1.data);
+    let lastChange = parseDate(res.data);
     if (lastChange > lastPoll) {
-        getPosts();
+        fetchPosts();
         lastPoll = new Date();
     }
 }
 
+let loading = $state(true);
+
 onMount(async () => {
-    await getPosts();
+    await fetchPosts();
     loading = false;
 
     intervalID = window.setInterval(pollingFunction, interval);
-    // In case it stops
     window.addEventListener("focus", () => {
         window.clearInterval(intervalID);
         intervalID = window.setInterval(pollingFunction, interval);
@@ -288,7 +295,7 @@ onMount(async () => {
     {/each}
 </div>
 
-{#if admin}
+{#if isAdmin}
     <button
         class="absolute top-0 right-0 m-2 text-blue-300 text-sm"
         onclick={() => {
@@ -331,7 +338,7 @@ onMount(async () => {
                         </div>
                         <div class="ml-[0.4rem] flex flex-col justify-between w-fit gap-[1px]">
                             <PostAction
-                                {admin}
+                                {isAdmin}
                                 postID={post.id}
                                 currentEditId={currentEdit?.postId}
                                 {startEdit}
@@ -388,7 +395,7 @@ onMount(async () => {
                                 </div>
                                 <div class="ml-[0.4rem] flex flex-col justify-between w-fit gap-[1px]">
                                     <PostAction
-                                        {admin}
+                                        {isAdmin}
                                         postID={post.id}
                                         currentEditId={currentEdit?.postId}
                                         {startEdit}

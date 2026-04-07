@@ -1,8 +1,12 @@
-// Used on both the server and client
+// *Editables*
 //
-// Sent with post when created to mark the creator as able to edit that post.
+// A way for clients to submit updates to posts made recently without requiring
+// sign-in.  When a post is created an `editId` is generated and stored on the
+// server and client, which is required by the edit-post API.  It is valid
+// until the page is refreshed (since I don't use local storage) or the server
+// is shutdown (since this is hosted for free on vercel).
 //
-// TODO: add expiry date (too lazy rn)
+// TODO: expiry date
 export let editables: {
     editId: string;
     postId: number;

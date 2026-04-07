@@ -2,8 +2,9 @@
 import { editable } from "$lib/editable";
 
 type PostAction = (id: number) => void;
+
 type Props = {
-    admin: boolean,
+    isAdmin: boolean,
     postID: number,
     currentEditId: number | undefined,
     startEdit: PostAction,
@@ -12,7 +13,7 @@ type Props = {
 };
 
 let {
-    admin, postID, currentEditId,
+    isAdmin, postID, currentEditId,
     startEdit, deletePost, abortEdit
 }: Props = $props();
 
@@ -20,23 +21,24 @@ const imageWidth = 12.25;
 const imageClass = "w-fit p-[2px] rounded-border-transp";
 </script>
 
+<!-- There is a reason for these 2 divs -->
 <div class="h-5">
-    <!-- There is a reason for these 2 divs, future me -->
     <div class="flex flex-wrap gap-2">
-        {#if admin}
+        {#if isAdmin}
             <button
                 onclick={() => deletePost(postID)}
                 class="{imageClass} bg-red-400">
                 <img width="{imageWidth}" src="/trash.svg" alt="delete" />
             </button>
         {/if}
+
         {#if currentEditId && postID == currentEditId}
             <button
                 onclick={() => abortEdit(postID)}
                 class="{imageClass} bg-red-400">
                 <img width="{imageWidth}" src="/close.svg" alt="close" />
             </button>
-        {:else if admin || editable(postID)}
+        {:else if isAdmin || editable(postID)}
             <button
                 onclick={() => startEdit(postID)}
                 class="{imageClass} bg-blue-400">
