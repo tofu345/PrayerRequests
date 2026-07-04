@@ -9,7 +9,7 @@ import { editPost } from "$lib/prisma";
 const schema = Joi.object({
     editId: Joi.string(), // not required here to allow admin to edit everything
     postId: Joi.number().required(),
-    text: Joi.string().max(280).required(),
+    text: Joi.string().min(3).max(280).required(),
     postType: Joi.string()
         .valid(...Object.values(Prisma.PostType))
         .required(),

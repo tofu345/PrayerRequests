@@ -21,9 +21,8 @@ let { data }: { data: PageData } = $props();
 
 const isAdmin: boolean = data.admin !== null && data.admin !== "";
 
-let postList: Posts = [];         // all
-let posts: Posts = $state([]);    // created this week
-let oldPosts: Posts = $state([]); // previous week and older
+let posts: Posts = $state([]);
+let oldPosts: Posts = $state([]);
 let oldPostsShown = $state(true);
 
 function parseDate(date: string | Date): Date {
@@ -31,8 +30,8 @@ function parseDate(date: string | Date): Date {
     return date; // surely it can't be anything else?
 }
 
-// Using the new post list, [list], seperate all posts made since the last
-// sunday (posts) from those before (oldPosts).
+// Store all posts made before the last sunday in [oldPosts] and those since in
+// [posts].
 function setPostList(list: Posts): void {
     let today = new Date();
     let dayOfWeek = today.getDay(); // 0 on sundays.
@@ -40,7 +39,6 @@ function setPostList(list: Posts): void {
     let dayOfMonth = today.getDate() - (dayOfWeek == 0 ? 6 : dayOfWeek);
     let lastSunday = new Date(today.getFullYear(), today.getMonth(), dayOfMonth, 0, 0, 0);
 
-    postList = list;
     posts = list.filter(v => parseDate(v.createdAt) > lastSunday);
     oldPosts = list.filter(v => parseDate(v.createdAt) <= lastSunday);
 }
@@ -55,42 +53,63 @@ async function fetchPosts() {
     }
 }
 
+const States = {
+    button: 0,
+    textarea: 1,
+    select: 2,
+    submit: 3
+};
+let currentState = $state(States.button);
+let textAreaDisabled = $derived(currentState == States.submit);
+let submitError = $state(false);
+
 let currentEdit: {
     editId: string | undefined, // undefined for admin
-    postId: number,
-    postIndex: number
+    post: Prisma.Post,
 } | null = $state(null);
+let textArea = $state("");
+let postType: Prisma.PostType | null = null;
 
 async function startEdit(postId: number) {
     if (currentEdit !== null) {
-        return newNotification("Already editing", NotifType.warning, 2000);
+        return newNotification("Already editing another post",
+                               NotifType.warning, 2000);
     }
-    if (text.trim() !== "") {
-        return newNotification("You have unsaved changes.\nDelete to continue", NotifType.warning);
-    }
-
-    let postIndex = postList.findIndex(el => el.id == postId);
-    if (postIndex == -1) {
-        return newNotification("Cannot edit this post", NotifType.warning);
+    if (textArea.trim() !== "") {
+        currentState = States.textarea;
+        return newNotification("You have unsaved changes\nDelete them to continue",
+                               NotifType.warning);
     }
 
-    let editId;
+    let post = posts.find(el => el.id == postId)
+            || oldPosts.find(el => el.id == postId);
+    if (post === undefined) {
+        return newNotification("The post you are trying to edit is nowhere to be found",
+                               NotifType.error);
+    }
+
+    let editId = undefined;
     if (!isAdmin) {
         editId = editables.find(el => el.postId == postId)?.editId;
     }
-    currentEdit = { editId, postId, postIndex };
 
-    text = postList[postIndex].text;
+    currentEdit = { editId, post };
+    textArea = post.text;
     currentState = States.textarea;
     postType = null;
 }
 
 async function submitEdit() {
+    if (currentEdit === null) {
+        console.error("cannot submit empty post edit");
+        return;
+    }
+
     const res: AxiosResponse = await axios
         .post("/api/edit-post", {
             editId: currentEdit!.editId,
-            postId: currentEdit!.postId,
-            text, postType,
+            postId: currentEdit!.post.id,
+            text: textArea, postType,
         })
         .then(res => res)
         .catch(err => err.response);
@@ -102,14 +121,23 @@ async function submitEdit() {
         return;
     }
 
-    postList[currentEdit!.postIndex] = res.data.post;
-    setPostList(postList); // a bit lazy
+    const postId = currentEdit.post.id;
+    let index = posts.findIndex(el => el.id == postId);
+    if (index !== -1) {
+        posts[index] = res.data.post;
+    } else {
+        index = oldPosts.findIndex(el => el.id == postId);
+        if (index !== -1) {
+            oldPosts[index] = res.data.post;
+        }
+    }
+
     abortEdit();
 }
 
 async function abortEdit() {
     currentEdit = null;
-    text = "";
+    textArea = "";
     postType = null;
     currentState = States.button;
 }
@@ -124,22 +152,10 @@ async function deletePost(id: number) {
         .then((res) => res)
         .catch((err) => err.response);
     if (res.status === 200) {
-        postList = postList.filter(v => v.id != id);
-        setPostList(postList); // a bit lazy
+        posts = posts.filter(v => v.id != id);
+        oldPosts = oldPosts.filter(v => v.id != id);
     }
 }
-
-const States = {
-    button: 0,
-    textarea: 1,
-    select: 2,
-    submit: 3
-};
-let currentState = $state(States.button);
-let disabled = $derived(currentState == States.submit);
-let postType: Prisma.PostType | null = null;
-let submitErr = $state(false);
-let text = $state("");
 
 async function submitOnShiftEnter(e: KeyboardEvent) {
     if (e.key == "Enter" && e.shiftKey) {
@@ -148,9 +164,9 @@ async function submitOnShiftEnter(e: KeyboardEvent) {
 }
 
 function waitForErrorAnimation() {
-    submitErr = true;
+    submitError = true;
     setTimeout(() => {
-        submitErr = false;
+        submitError = false;
     }, 1000);
 }
 
@@ -159,8 +175,8 @@ async function submitNewPost(_event: Event) {
         return submitEdit();
     }
 
-    text = text.trim();
-    if (text === "") {
+    textArea = textArea.trim();
+    if (textArea === "") {
         return waitForErrorAnimation();
     }
 
@@ -170,10 +186,10 @@ async function submitNewPost(_event: Event) {
     }
 
     currentState = States.submit;
-    submitErr = false;
+    submitError = false;
 
     const res: AxiosResponse = await axios
-        .post("/api/create-post", { text, postType })
+        .post("/api/create-post", { text: textArea, postType })
         .then((res) => res)
         .catch((err) => err.response);
     postType = null;
@@ -187,7 +203,7 @@ async function submitNewPost(_event: Event) {
     let post = res.data.post;
     editables.push({editId: res.data.editId, postId: post.id});
     posts.splice(0, 0, post); // insert at beginning
-    text = "";
+    textArea = "";
     currentState = States.button;
 }
 
@@ -216,25 +232,27 @@ async function focusOnCreate(el: HTMLTextAreaElement) {
 }
 
 const NotifType = {
-    warning: 0,
-    error: 1,
-    info: 2
+    info: 0,
+    warning: 1,
+    error: 2,
 }
 let notifications: {id: number, type: number, msg: string}[] = $state([]);
 
 function newNotification(msg: string, type: number, timeout?: number) {
     if (typeof msg == 'object') msg = JSON.stringify(msg);
+
     let id = Math.max(...notifications.map(v => v.id)) + 1;
     if (notifications.length === 0) {
         id = 0;
     }
     notifications.push({ id, type, msg });
+
     if (timeout) {
-        setTimeout(() => delNotifById(id), timeout);
+        setTimeout(() => deleteNotification(id), timeout);
     }
 }
 
-function delNotifById(id: number) {
+function deleteNotification(id: number) {
     notifications = notifications.filter(v => v.id !== id);
 }
 
@@ -288,7 +306,10 @@ onMount(async () => {
             class:bg-yellow-800={notif.type == NotifType.warning}
             class:bg-red-800={notif.type == NotifType.error}
         >
-            <button class="h-full w-full flex justify-center items-center" onclick={() => delNotifById(notif.id)}>
+            <button
+                class="h-full w-full flex justify-center items-center"
+                onclick={() => deleteNotification(notif.id)}
+            >
                 <p class="whitespace-pre-wrap text-xs"> {notif.msg} </p>
             </button>
         </div>
@@ -461,8 +482,8 @@ onMount(async () => {
                 style="height: fit-content;"
             >
                 <textarea
-                    {disabled}
-                    bind:value={text}
+                    disabled={textAreaDisabled}
+                    bind:value={textArea}
                     oninput={(e) => autoExpandTextarea(e.target)}
                     onkeypress={submitOnShiftEnter}
                     rows="1"
@@ -474,11 +495,11 @@ onMount(async () => {
                 ></textarea>
                 <button
                     onclick={() => {
-                        if (text.trim() === "") { return waitForErrorAnimation(); }
+                        if (textArea.trim() === "") { return waitForErrorAnimation(); }
                         currentState = States.select;
                     }}
                     class="bg-transparent p-1 absolute top-[0.25rem] right-1">
-                    {#if submitErr}
+                    {#if submitError}
                         <img
                             id="errorSvg"
                             src="/error.svg"

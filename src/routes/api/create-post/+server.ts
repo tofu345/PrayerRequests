@@ -10,7 +10,7 @@ import Prisma from "@prisma/client";
 import { maxTextLength } from "$lib/constants";
 
 const postSchema = Joi.object({
-    text: Joi.string().max(maxTextLength).required(),
+    text: Joi.string().min(3).max(maxTextLength).required(),
     postType: Joi.string()
         .valid(...Object.values(Prisma.PostType))
         .required(),
