@@ -5,7 +5,6 @@ import type Prisma from "@prisma/client";
 
 const prisma = new PrismaClient();
 export let cache: Prisma.Post[] | null = null;
-
 export let lastChange: Date = new Date(); // last (create, edit, delete) made
 
 export function clearCache() {
@@ -13,10 +12,10 @@ export function clearCache() {
     lastChange = new Date();
 }
 
-export function startOfLastWeek(): Date {
+export function twoSundaysAgo(): Date {
     let date = new Date();
-    // Weeks start on sunday
-    date.setDate(date.getDate() - date.getDay() - 13);
+    // normalise to sunday with getDay() and walk back two sundays
+    date.setDate(date.getDate() - date.getDay() - 14);
     date.setUTCHours(0);
     date.setUTCMinutes(0);
     date.setUTCSeconds(0);
@@ -26,13 +25,6 @@ export function startOfLastWeek(): Date {
 export async function getPosts() {
     if (cache != null) {
         return cache;
-    }
-
-    let deletedPosts = await prisma.post.deleteMany({
-        where: { createdAt: { lt: startOfLastWeek() } },
-    });
-    if (deletedPosts.count > 0) {
-        console.log(`> Deleted ${deletedPosts.count} old posts`);
     }
 
     cache = await prisma.post.findMany({ orderBy: { createdAt: "desc" } });
@@ -100,6 +92,13 @@ async function main() {
     let admins = await prisma.admin.count();
     if (admins === 0 && ADMIN_EMAIL && ADMIN_PASSWORD) {
         createAdmin(ADMIN_EMAIL, ADMIN_PASSWORD);
+    }
+
+    let deletedPosts = await prisma.post.deleteMany({
+        where: { createdAt: { lte: twoSundaysAgo() } },
+    });
+    if (deletedPosts.count > 0) {
+        console.log(`> Deleted ${deletedPosts.count} old posts`);
     }
 }
 

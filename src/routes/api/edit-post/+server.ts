@@ -7,7 +7,7 @@ import { editables } from "$lib/editable";
 import { editPost } from "$lib/prisma";
 
 const schema = Joi.object({
-    editId: Joi.string(), // not required to allow admin to edit everything
+    editId: Joi.string(), // not required here to allow admin to edit everything
     postId: Joi.number().required(),
     text: Joi.string().max(280).required(),
     postType: Joi.string()
@@ -27,9 +27,7 @@ export const POST: RequestHandler = async function ({ request, locals }) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 
-    let editAllowed =
-        locals.admin || editables.find((el) => el.editId == value.editId);
-    if (editAllowed) {
+    if (locals.admin || editables.find((el) => el.editId == value.editId)) {
         let post = null;
         try {
             post = await editPost(value.postId, value.text, value.postType);
