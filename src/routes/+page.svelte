@@ -1,14 +1,12 @@
 <script lang="ts">
 import axios from '$lib/axios';
-import moment from 'moment';
 import { flip } from 'svelte/animate';
 import { slide, fade } from 'svelte/transition';
 import { onMount } from 'svelte';
 
-import PostAction from '$lib/PostAction.svelte';
+import Post from '$lib/Post.svelte';
 import { deleteCookie } from '$lib/cookie';
 import { editables } from "$lib/editable";
-import { postTypeEmoji } from '$lib/utils';
 
 import type { PageData } from './$types';
 import type { AxiosResponse } from 'axios';
@@ -132,10 +130,10 @@ async function submitEdit() {
         }
     }
 
-    abortEdit();
+    resetInput();
 }
 
-async function abortEdit() {
+async function resetInput() {
     currentEdit = null;
     textArea = "";
     postType = null;
@@ -163,8 +161,10 @@ async function submitOnShiftEnter(e: KeyboardEvent) {
     }
 }
 
-function waitForErrorAnimation() {
+function textAreaError() {
+    // display error svg
     submitError = true;
+    // allow some 'pos-x-wiggle's
     setTimeout(() => {
         submitError = false;
     }, 1000);
@@ -177,7 +177,7 @@ async function submitNewPost(_event: Event) {
 
     textArea = textArea.trim();
     if (textArea === "") {
-        return waitForErrorAnimation();
+        return textAreaError();
     }
 
     if (postType === null) {
@@ -192,27 +192,27 @@ async function submitNewPost(_event: Event) {
         .post("/api/create-post", { text: textArea, postType })
         .then((res) => res)
         .catch((err) => err.response);
-    postType = null;
 
     if (res.status === 400) {
         currentState = States.textarea;
+        postType = null;
         newNotification(res.data.message || res.data, NotifType.error);
-        return waitForErrorAnimation();
+        return textAreaError();
     }
 
     let post = res.data.post;
     editables.push({editId: res.data.editId, postId: post.id});
     posts.splice(0, 0, post); // insert at beginning
-    textArea = "";
-    currentState = States.button;
+
+    resetInput();
 }
 
-function autoExpandTextarea(obj: any) {
+function autoExpandTextArea(obj: any) {
     obj.style.height = Math.min(obj.scrollHeight, 150) + "px";
 }
 
 async function focusOnCreate(el: HTMLTextAreaElement) {
-    autoExpandTextarea(el);
+    autoExpandTextArea(el);
     el.focus();
 
     // wait for keyboard animation :|
@@ -273,7 +273,7 @@ const pollingFunction = async function () {
     let lastChange = parseDate(res.data);
     if (lastChange > lastPoll) {
         fetchPosts();
-        lastPoll = new Date();
+        lastPoll = lastChange;
     }
 }
 
@@ -343,7 +343,6 @@ onMount(async () => {
             </div>
         {:else}
             <div class="flex flex-col gap-2">
-                <!-- PostList -->
                 {#each posts as post (post.id)}
                     <div
                         class="flex"
@@ -351,25 +350,14 @@ onMount(async () => {
                         out:fade={{ duration: 200 }}
                         animate:flip={{ delay: 200, duration: 200 }}
                     >
-                        <div class="text-lg mr-1 mt-1"> {postTypeEmoji(post.postType)} </div>
-                        <div class="bg-gray-600 rounded h-fit my-auto">
-                            <p style="overflow-wrap: break-word;" class="truncate text-base whitespace-pre-wrap p-1 px-2">
-                                {post.text}
-                            </p>
-                        </div>
-                        <div class="ml-[0.4rem] flex flex-col justify-between w-fit gap-[1px]">
-                            <PostAction
-                                {isAdmin}
-                                postID={post.id}
-                                currentEditId={currentEdit?.postId}
-                                {startEdit}
-                                {abortEdit}
-                                {deletePost}
-                            />
-                            <p class="text-xs text-gray-300 w-fit whitespace-pre-wrap">
-                                {moment(post.createdAt).format("ddd Do")}
-                            </p>
-                        </div>
+                        <Post
+                            {isAdmin}
+                            post={post}
+                            currentEditId={currentEdit?.post.id}
+                            {startEdit}
+                            {resetInput}
+                            {deletePost}
+                        />
                     </div>
                 {:else}
                     <div class="w-full h-60 flex-center text-sm italic">
@@ -400,7 +388,6 @@ onMount(async () => {
             {#if oldPosts.length != 0 && oldPostsShown}
                 <div transition:slide={{ duration: 500 }}>
                     <div class="flex flex-col gap-2">
-                        <!-- OldPostList -->
                         {#each oldPosts as post (post.id)}
                             <div
                                 class="w-full flex"
@@ -408,25 +395,14 @@ onMount(async () => {
                                 out:fade={{ duration: 200 }}
                                 animate:flip={{ delay: 200, duration: 200 }}
                             >
-                                <div class="text-lg mr-1 mt-1"> {postTypeEmoji(post.postType)} </div>
-                                <div class="bg-gray-600 rounded h-fit my-auto">
-                                    <p style="overflow-wrap: break-word;" class="truncate text-base whitespace-pre-wrap p-1 px-2">
-                                        {post.text}
-                                    </p>
-                                </div>
-                                <div class="ml-[0.4rem] flex flex-col justify-between w-fit gap-[1px]">
-                                    <PostAction
-                                        {isAdmin}
-                                        postID={post.id}
-                                        currentEditId={currentEdit?.postId}
-                                        {startEdit}
-                                        {abortEdit}
-                                        {deletePost}
-                                    />
-                                    <p class="text-xs text-gray-300 w-fit whitespace-pre-wrap">
-                                        {moment(post.createdAt).format("ddd Do")}
-                                    </p>
-                                </div>
+                                <Post
+                                    {isAdmin}
+                                    post={post}
+                                    currentEditId={currentEdit?.post.id}
+                                    {startEdit}
+                                    {resetInput}
+                                    {deletePost}
+                                />
                             </div>
                         {/each}
                     </div>
@@ -484,7 +460,7 @@ onMount(async () => {
                 <textarea
                     disabled={textAreaDisabled}
                     bind:value={textArea}
-                    oninput={(e) => autoExpandTextarea(e.target)}
+                    oninput={(e) => autoExpandTextArea(e.target)}
                     onkeypress={submitOnShiftEnter}
                     rows="1"
                     placeholder=""
@@ -495,7 +471,7 @@ onMount(async () => {
                 ></textarea>
                 <button
                     onclick={() => {
-                        if (textArea.trim() === "") { return waitForErrorAnimation(); }
+                        if (textArea.trim() === "") { return textAreaError(); }
                         currentState = States.select;
                     }}
                     class="bg-transparent p-1 absolute top-[0.25rem] right-1">
@@ -524,7 +500,7 @@ onMount(async () => {
 {/if}
 
 <style>
-.resize-none{
+.resize-none {
     resize: none;
 }
 
