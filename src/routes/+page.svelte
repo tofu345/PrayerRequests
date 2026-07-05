@@ -352,8 +352,8 @@ onMount(async () => {
                     >
                         <Post
                             {isAdmin}
-                            post={post}
-                            currentEditId={currentEdit?.post.id}
+                            {post}
+                            currentEdit={currentEdit?.post.id}
                             {startEdit}
                             {resetInput}
                             {deletePost}
@@ -397,8 +397,8 @@ onMount(async () => {
                             >
                                 <Post
                                     {isAdmin}
-                                    post={post}
-                                    currentEditId={currentEdit?.post.id}
+                                    {post}
+                                    currentEdit={currentEdit?.post.id}
                                     {startEdit}
                                     {resetInput}
                                     {deletePost}
