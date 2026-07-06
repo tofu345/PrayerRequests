@@ -286,6 +286,7 @@ onMount(async () => {
     intervalID = window.setInterval(pollingFunction, interval);
     window.addEventListener("focus", () => {
         window.clearInterval(intervalID);
+        pollingFunction();
         intervalID = window.setInterval(pollingFunction, interval);
     });
     window.addEventListener("blur", () => {
