@@ -10,7 +10,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^3.0.0",
+		"@sveltejs/adapter-vercel": "^6.3.4",
 		"@sveltejs/kit": "^2.0.0",
 		"@sveltejs/vite-plugin-svelte": "^4.0.0",
 		"@types/node": "^22.9.0",
@@ -36,6 +36,7 @@
 		"@prisma/engines@5.22.0": true,
 		"@sveltejs/kit@2.15.2": true,
 		"prisma@5.22.0": true,
+		"esbuild@0.28.1": true,
 		"esbuild@0.21.5": true
 	}
 }
