@@ -30,5 +30,12 @@
 	},
 	"dependencies": {
 		"@prisma/client": "^5.22.0"
+	},
+	"allowScripts": {
+		"@prisma/client@5.22.0": true,
+		"@prisma/engines@5.22.0": true,
+		"@sveltejs/kit@2.15.2": true,
+		"prisma@5.22.0": true,
+		"esbuild@0.21.5": true
 	}
 }
