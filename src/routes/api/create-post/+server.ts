@@ -1,13 +1,12 @@
-import Joi from "joi";
 import { error as errorRes, json, type RequestHandler } from "@sveltejs/kit";
+import Joi from "joi";
 
-import { createPost } from "$lib/prisma";
-import { makeEditId, editables } from "$lib/editable";
-
-// js skill issues
 import { Prisma as PrismaObj } from "@prisma/client";
 import Prisma from "@prisma/client";
-import { maxTextLength } from "$lib/constants";
+
+import { createPost } from "$lib/server/prisma";
+import { maxTextLength } from "$lib/client/constants";
+import { editIds, newEditId } from "$lib/server/editable";
 
 const postSchema = Joi.object({
     text: Joi.string().min(3).max(maxTextLength).required(),
@@ -36,8 +35,8 @@ export const POST: RequestHandler = async function ({ request }) {
         throw e;
     }
 
-    let editId = makeEditId();
-    editables.push({ editId, postId: post.id });
-
+    // store editId on server and send to client
+    let editId = newEditId();
+    editIds.set(post.id, editId);
     return json({ post, editId });
 };

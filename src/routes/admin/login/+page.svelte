@@ -1,9 +1,9 @@
 <script lang="ts">
 import { goto } from '$app/navigation';
 
-import { preventDefault } from "$lib/utils";
-import axios from '$lib/axios';
-import { setCookie } from "$lib/cookie";
+import { preventDefault } from "$lib/client/utils";
+import axios from '$lib/client/axios';
+import { setCookie } from "$lib/client/cookie";
 
 import type { AxiosResponse } from 'axios';
 

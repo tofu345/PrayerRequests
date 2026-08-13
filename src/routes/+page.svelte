@@ -1,17 +1,16 @@
 <script lang="ts">
-import axios from '$lib/axios';
 import { flip } from 'svelte/animate';
-import { slide, fade } from 'svelte/transition';
 import { onMount } from 'svelte';
+import { slide, fade } from 'svelte/transition';
 
-import Post from '$lib/Post.svelte';
-import { deleteCookie } from '$lib/cookie';
-import { editables } from "$lib/editable";
+import Post from '$lib/client/Post.svelte';
+import axios from '$lib/client/axios';
+import { deleteCookie } from '$lib/client/cookie';
+import { maxTextLength } from '$lib/client/constants';
 
 import type { PageData } from './$types';
 import type { AxiosResponse } from 'axios';
 import type Prisma from '@prisma/client';
-import { maxTextLength } from '$lib/constants';
 
 type Posts = Prisma.Post[];
 
@@ -58,15 +57,18 @@ const States = {
     submit: 3
 };
 let currentState = $state(States.button);
+let textArea = $state("");
 let textAreaDisabled = $derived(currentState == States.submit);
+let postType: Prisma.PostType | null = null;
 let submitError = $state(false);
 
-let currentEdit: {
-    editId: string | undefined, // undefined for admin
-    post: Prisma.Post,
-} | null = $state(null);
-let textArea = $state("");
-let postType: Prisma.PostType | null = null;
+let currentEdit: number | null = $state(null);
+// see `src/lib/server/editable.ts`
+let editIds: Map<number, string> = $state(new Map());
+
+function storeEditIds() {
+    localStorage.setItem('editable', JSON.stringify(Array.from(editIds.entries())));
+}
 
 async function startEdit(postId: number) {
     if (currentEdit !== null) {
@@ -87,11 +89,9 @@ async function startEdit(postId: number) {
     }
 
     let editId = undefined;
-    if (!isAdmin) {
-        editId = editables.find(el => el.postId == postId)?.editId;
-    }
+    if (!isAdmin) editId = editIds.get(postId);
 
-    currentEdit = { editId, post };
+    currentEdit = post.id;
     textArea = post.text;
     currentState = States.textarea;
     postType = null;
@@ -105,8 +105,8 @@ async function submitEdit() {
 
     const res: AxiosResponse = await axios
         .post("/api/edit-post", {
-            editId: currentEdit!.editId,
-            postId: currentEdit!.post.id,
+            editId: editIds.get(currentEdit),
+            postId: currentEdit,
             text: textArea, postType,
         })
         .then(res => res)
@@ -114,12 +114,18 @@ async function submitEdit() {
 
     if (res.status !== 200) {
         currentState = States.textarea;
-        newNotification("Unable to perform update", NotifType.error);
+        newNotification("Failed to update post", NotifType.error);
         console.error(res);
+
+        // the editId is not present on the server, delete it.
+        editIds.delete(currentEdit);
+        storeEditIds();
+
+        resetInput();
         return;
     }
 
-    const postId = currentEdit.post.id;
+    const postId = currentEdit;
     let index = posts.findIndex(el => el.id == postId);
     if (index !== -1) {
         posts[index] = res.data.post;
@@ -200,9 +206,14 @@ async function submitNewPost(_event: Event) {
         return textAreaError();
     }
 
-    let post = res.data.post;
-    editables.push({editId: res.data.editId, postId: post.id});
-    posts.splice(0, 0, post); // insert at beginning
+    const post = res.data.post;
+
+    // store editId on client
+    editIds.set(post.id, res.data.editId);
+    storeEditIds();
+
+    // insert at beginning
+    posts.splice(0, 0, post);
 
     resetInput();
 }
@@ -280,6 +291,9 @@ const pollingFunction = async function () {
 let loading = $state(true);
 
 onMount(async () => {
+    const previous = localStorage.getItem('editable');
+    if (previous) editIds = new Map(JSON.parse(previous));
+
     await fetchPosts();
     loading = false;
 
@@ -354,7 +368,8 @@ onMount(async () => {
                         <Post
                             {isAdmin}
                             {post}
-                            currentEdit={currentEdit?.post.id}
+                            {currentEdit}
+                            {editIds}
                             {startEdit}
                             {resetInput}
                             {deletePost}
@@ -399,7 +414,8 @@ onMount(async () => {
                                 <Post
                                     {isAdmin}
                                     {post}
-                                    currentEdit={currentEdit?.post.id}
+                                    {currentEdit}
+                                    {editIds}
                                     {startEdit}
                                     {resetInput}
                                     {deletePost}

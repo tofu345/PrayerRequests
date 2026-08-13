@@ -1,5 +1,6 @@
-import { deletePost } from "$lib/prisma";
 import { error as errorRes, json, type RequestHandler } from "@sveltejs/kit";
+
+import { deletePost } from "$lib/server/prisma";
 
 export const POST: RequestHandler = async function({ request, locals }) {
     if (!locals.admin) {

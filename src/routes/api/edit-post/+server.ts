@@ -3,13 +3,14 @@ import { Prisma as PrismaObj } from "@prisma/client";
 import Prisma from "@prisma/client";
 import Joi from "joi";
 
-import { editables } from "$lib/editable";
-import { editPost } from "$lib/prisma";
+import { editPost } from "$lib/server/prisma";
+import { maxTextLength } from "$lib/client/constants";
+import { editIds } from "$lib/server/editable";
 
 const schema = Joi.object({
     editId: Joi.string(), // not required here to allow admin to edit everything
     postId: Joi.number().required(),
-    text: Joi.string().min(3).max(280).required(),
+    text: Joi.string().min(3).max(maxTextLength).required(),
     postType: Joi.string()
         .valid(...Object.values(Prisma.PostType))
         .required(),
@@ -27,7 +28,8 @@ export const POST: RequestHandler = async function ({ request, locals }) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 
-    if (locals.admin || editables.find((el) => el.editId == value.editId)) {
+    const storedEditId = editIds.get(value.postId);
+    if (locals.admin || storedEditId == value.editId) {
         let post = null;
         try {
             post = await editPost(value.postId, value.text, value.postType);

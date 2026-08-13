@@ -1,23 +1,24 @@
 <script lang="ts">
 import moment from 'moment';
 
-import { editable } from "$lib/editable";
-import { postTypeEmoji } from '$lib/utils';
-
 import type Prisma from '@prisma/client';
 
-type PostAction = (id: number) => void;
+import { postTypeEmoji } from '$lib/client/utils';
+
+// an action performed in the parent component
+type Action = (id: number) => void;
 
 type Props = {
     isAdmin: boolean,
     post: Prisma.Post,
-    currentEdit: number | undefined,
-    startEdit: PostAction,
-    resetInput: PostAction,
-    deletePost: PostAction,
+    currentEdit: number | null,
+    editIds: Map<number, string>,
+    startEdit: Action,
+    resetInput: Action,
+    deletePost: Action,
 };
 let {
-    isAdmin, post, currentEdit, startEdit, resetInput, deletePost
+    isAdmin, post, currentEdit, editIds, startEdit, resetInput, deletePost
 }: Props = $props();
 
 const imageWidth = 12.25;
@@ -49,7 +50,7 @@ const imageClass = "p-[0.2rem] rounded";
                 class="{imageClass} bg-red-400">
                 <img width="{imageWidth}" src="/close.svg" alt="close" />
             </button>
-        {:else if isAdmin || editable(post.id)}
+        {:else if isAdmin || editIds.has(post.id)}
             <button
                 onclick={() => startEdit(post.id)}
                 class="{imageClass} bg-blue-400">
