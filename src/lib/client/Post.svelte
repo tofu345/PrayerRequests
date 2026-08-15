@@ -60,6 +60,6 @@ const imageClass = "p-[0.2rem] rounded";
         {/if}
     </div>
     <p class="text-xs text-gray-300 w-fit whitespace-pre-wrap">
-        {moment(post.createdAt).format("ddd Do MMM")}
+        {moment(post.createdAt).format("ddd Do")}
     </p>
 </div>
