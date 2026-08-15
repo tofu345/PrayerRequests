@@ -6,7 +6,7 @@ import Prisma from "@prisma/client";
 
 import { createPost } from "$lib/server/prisma";
 import { maxTextLength } from "$lib/client/constants";
-import { editIds, newEditId } from "$lib/server/editable";
+import { edits, newEdit } from "$lib/server/editable";
 
 const postSchema = Joi.object({
     text: Joi.string().min(3).max(maxTextLength).required(),
@@ -36,7 +36,7 @@ export const POST: RequestHandler = async function ({ request }) {
     }
 
     // store editId on server and send to client
-    let editId = newEditId();
-    editIds.set(post.id, editId);
-    return json({ post, editId });
+    let edit = newEdit();
+    edits.set(post.id, edit);
+    return json({ post, edit });
 };

@@ -11,6 +11,7 @@ import { maxTextLength } from '$lib/client/constants';
 import type { PageData } from './$types';
 import type { AxiosResponse } from 'axios';
 import type Prisma from '@prisma/client';
+import type { Edit } from '$lib/server/editable';
 
 type Posts = Prisma.Post[];
 
@@ -64,10 +65,10 @@ let submitError = $state(false);
 
 let currentEdit: number | null = $state(null);
 // see `src/lib/server/editable.ts`
-let editIds: Map<number, string> = $state(new Map());
+let edits: Map<number, Edit> = $state(new Map());
 
 function storeEditIds() {
-    localStorage.setItem('editable', JSON.stringify(Array.from(editIds.entries())));
+    localStorage.setItem('editable', JSON.stringify(Array.from(edits.entries())));
 }
 
 async function startEdit(postId: number) {
@@ -89,7 +90,7 @@ async function startEdit(postId: number) {
     }
 
     let editId = undefined;
-    if (!isAdmin) editId = editIds.get(postId);
+    if (!isAdmin) editId = edits.get(postId);
 
     currentEdit = post.id;
     textArea = post.text;
@@ -105,7 +106,7 @@ async function submitEdit() {
 
     const res: AxiosResponse = await axios
         .post("/api/edit-post", {
-            editId: editIds.get(currentEdit),
+            editId: edits.get(currentEdit)?.id,
             postId: currentEdit,
             text: textArea, postType,
         })
@@ -118,7 +119,7 @@ async function submitEdit() {
         console.error(res);
 
         // the editId is not present on the server, delete it.
-        editIds.delete(currentEdit);
+        edits.delete(currentEdit);
         storeEditIds();
 
         resetInput();
@@ -209,7 +210,7 @@ async function submitNewPost(_event: Event) {
     const post = res.data.post;
 
     // store editId on client
-    editIds.set(post.id, res.data.editId);
+    edits.set(post.id, res.data.edit);
     storeEditIds();
 
     // insert at beginning
@@ -292,7 +293,15 @@ let loading = $state(true);
 
 onMount(async () => {
     const previous = localStorage.getItem('editable');
-    if (previous) editIds = new Map(JSON.parse(previous));
+    if (previous) {
+        const editsArray: [number, Edit][] = JSON.parse(previous);
+        for (const [id, edit] of editsArray) {
+            // keep valid edits
+            if (new Date() < parseDate(edit.expiration)) {
+                edits.set(id, edit);
+            }
+        }
+    }
 
     await fetchPosts();
     loading = false;
@@ -369,7 +378,7 @@ onMount(async () => {
                             {isAdmin}
                             {post}
                             {currentEdit}
-                            {editIds}
+                            {edits}
                             {startEdit}
                             {resetInput}
                             {deletePost}
@@ -415,7 +424,7 @@ onMount(async () => {
                                     {isAdmin}
                                     {post}
                                     {currentEdit}
-                                    {editIds}
+                                    {edits}
                                     {startEdit}
                                     {resetInput}
                                     {deletePost}

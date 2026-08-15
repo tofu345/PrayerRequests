@@ -4,6 +4,7 @@ import moment from 'moment';
 import type Prisma from '@prisma/client';
 
 import { postTypeEmoji } from '$lib/client/utils';
+import type { Edit } from '$lib/server/editable';
 
 // an action performed in the parent component
 type Action = (id: number) => void;
@@ -12,13 +13,13 @@ type Props = {
     isAdmin: boolean,
     post: Prisma.Post,
     currentEdit: number | null,
-    editIds: Map<number, string>,
+    edits: Map<number, Edit>,
     startEdit: Action,
     resetInput: Action,
     deletePost: Action,
 };
 let {
-    isAdmin, post, currentEdit, editIds, startEdit, resetInput, deletePost
+    isAdmin, post, currentEdit, edits, startEdit, resetInput, deletePost
 }: Props = $props();
 
 const imageWidth = 12.25;
@@ -50,7 +51,7 @@ const imageClass = "p-[0.2rem] rounded";
                 class="{imageClass} bg-red-400">
                 <img width="{imageWidth}" src="/close.svg" alt="close" />
             </button>
-        {:else if isAdmin || editIds.has(post.id)}
+        {:else if isAdmin || edits.has(post.id)}
             <button
                 onclick={() => startEdit(post.id)}
                 class="{imageClass} bg-blue-400">

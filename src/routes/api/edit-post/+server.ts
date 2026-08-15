@@ -5,7 +5,7 @@ import Joi from "joi";
 
 import { editPost } from "$lib/server/prisma";
 import { maxTextLength } from "$lib/client/constants";
-import { editIds } from "$lib/server/editable";
+import { edits, type Edit } from "$lib/server/editable";
 
 const schema = Joi.object({
     editId: Joi.string(), // not required here to allow admin to edit everything
@@ -28,8 +28,12 @@ export const POST: RequestHandler = async function ({ request, locals }) {
         return errorRes(400, error.details.map((v) => v.message).join("\n"));
     }
 
-    const storedEditId = editIds.get(value.postId);
-    if (locals.admin || storedEditId == value.editId) {
+    const edit: Edit | undefined = edits.get(value.postId);
+    const canEdit = edit !== undefined 
+        && edit.id == value.editId 
+        && new Date() < edit.expiration;
+
+    if (locals.admin || canEdit) {
         let post = null;
         try {
             post = await editPost(value.postId, value.text, value.postType);
